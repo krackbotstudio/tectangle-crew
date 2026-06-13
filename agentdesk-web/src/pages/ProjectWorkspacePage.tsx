@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Navigate, useParams, NavLink, useLocation } from "react-router-dom";
+import { Navigate, useParams, NavLink, Link, useLocation } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -101,6 +101,8 @@ export function ProjectWorkspacePage() {
 
       queryClient.invalidateQueries({ queryKey: ["projects"] });
 
+      queryClient.invalidateQueries({ queryKey: ["work-hub"] });
+
       setEditingTitle(false);
 
     },
@@ -191,6 +193,15 @@ export function ProjectWorkspacePage() {
             <>
 
               <h1 className="text-lg font-semibold text-text-strong">{project?.title}</h1>
+
+              {project?.workProjectId && (
+                <Link
+                  to="/work"
+                  className="rounded-full border border-border px-2.5 py-0.5 text-[11px] text-text-muted hover:border-neutral-500 hover:text-text-strong"
+                >
+                  Open in Work hub
+                </Link>
+              )}
 
               <button
 

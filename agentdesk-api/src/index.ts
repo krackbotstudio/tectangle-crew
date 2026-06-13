@@ -11,6 +11,7 @@ import teamsRoutes from "./routes/teams.js";
 import projectsRoutes from "./routes/projects.js";
 import n8nRoutes from "./routes/n8n.js";
 import usersRoutes from "./routes/users.js";
+import workRoutes from "./routes/work.js";
 import { dbMode, getPoolForHealth, initDatabase } from "./db.js";
 
 const app = express();
@@ -18,7 +19,11 @@ const app = express();
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || config.corsOrigins.includes(origin)) {
+      if (
+        !origin ||
+        config.corsOrigins.includes(origin) ||
+        /^http:\/\/localhost:\d+$/.test(origin)
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -48,6 +53,7 @@ app.use("/api/teams", teamsRoutes);
 app.use("/api/projects", projectsRoutes);
 app.use("/api/n8n", n8nRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/work", workRoutes);
 
 app.use(
   (
@@ -73,5 +79,8 @@ async function start() {
 
 start().catch((err) => {
   console.error("Failed to start API:", err);
+  if (err instanceof Error && err.stack) {
+    console.error(err.stack);
+  }
   process.exit(1);
 });

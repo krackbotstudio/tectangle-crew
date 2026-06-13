@@ -1,4 +1,4 @@
-import { Navigate, useParams, NavLink, Link } from "react-router-dom";
+import { useParams, NavLink } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MessageSquare, ListTodo, BookOpen, Settings, Workflow } from "lucide-react";
 import { api } from "../lib/api";
@@ -7,6 +7,7 @@ import { TasksPage } from "./TasksPage";
 import { KnowledgePage } from "./KnowledgePage";
 import { SettingsPage } from "./SettingsPage";
 import { AutomationsPage } from "./AutomationsPage";
+import { TeamConfigurePage } from "../components/teams/TeamConfigurePage";
 import { listItemNavClass } from "../components/workspace/DashboardUI";
 import { AgentAvatar } from "../components/workspace/TagEditor";
 import { AgentIdentityBadge } from "../components/workspace/AgentIdentity";
@@ -37,19 +38,19 @@ export function TeamWorkspacePage() {
   }
 
   if (!agentSlug) {
-    const first = teamData?.agents.find((a) => a.isActive) ?? teamData?.agents[0];
-    if (first) return <Navigate to={`/teams/${teamSlug}/agents/${first.slug}`} replace />;
+    if (!teamData) {
+      return (
+        <div className="flex h-full items-center justify-center text-text-muted">Team not found.</div>
+      );
+    }
     return (
-      <div className="flex h-full flex-col items-center justify-center px-4 text-center text-text-muted">
-        <p>No active agents in this team.</p>
-        <p className="mt-1 text-sm">
-          Activate or configure agents in{" "}
-          <Link to="/agents" className="text-text-strong underline underline-offset-2">
-            Agents
-          </Link>
-          , or clone one from the sidebar.
-        </p>
-      </div>
+      <TeamConfigurePage
+        teamSlug={teamSlug!}
+        team={teamData.team}
+        agents={teamData.agents}
+        projects={teamData.projects ?? []}
+        toolRequests={teamData.toolRequests ?? []}
+      />
     );
   }
 

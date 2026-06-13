@@ -2,6 +2,7 @@ import { Router } from "express";
 import { query } from "../db.js";
 import { authRequired, adminRequired } from "../middleware/auth.js";
 import { config } from "../config.js";
+import agentBoardRoutes from "./agentBoard.js";
 
 const router = Router();
 
@@ -105,6 +106,8 @@ router.get("/", authRequired, async (req, res) => {
     ),
   });
 });
+
+router.use("/:slug/board", agentBoardRoutes);
 
 router.get("/:slug", authRequired, async (req, res) => {
   const result = await query<AgentRow>(`${agentSelect} WHERE a.slug = $1`, [req.params.slug]);

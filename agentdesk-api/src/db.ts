@@ -11,7 +11,59 @@ const MIGRATIONS_DIR = path.resolve(__dirname, "../../database/migrations");
 
 let pgPool: pg.Pool | null = null;
 let pglite: PGlite | null = null;
+let embeddedLockPath: string | null = null;
 export let dbMode: "postgres" | "embedded" = "postgres";
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function acquireEmbeddedLock(dataDir: string): Promise<void> {
+  embeddedLockPath = path.join(path.dirname(dataDir), ".agentdesk-api.lock");
+  try {
+    const raw = await fs.readFile(embeddedLockPath, "utf-8");
+    const pid = Number.parseInt(raw.trim(), 10);
+    if (Number.isFinite(pid) && isProcessAlive(pid)) {
+      throw new Error(
+        `Another Agent Desk API is already using the embedded database (PID ${pid}). Stop other "npm run dev" processes and try again.`
+      );
+    }
+    await fs.unlink(embeddedLockPath).catch(() => undefined);
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("Another Agent Desk API")) {
+      throw err;
+    }
+  }
+
+  await fs.mkdir(path.dirname(embeddedLockPath), { recursive: true });
+  await fs.writeFile(embeddedLockPath, String(process.pid), "utf-8");
+}
+
+function releaseEmbeddedLock(): void {
+  if (!embeddedLockPath) return;
+  fs.unlink(embeddedLockPath).catch(() => undefined);
+  embeddedLockPath = null;
+}
+
+function isEmbeddedDbFailure(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /Aborted|PGlite|database|lock/i.test(message);
+}
+
+async function resetEmbeddedDataDir(dataDir: string): Promise<void> {
+  releaseEmbeddedLock();
+  const backupDir = `${dataDir}.backup-${Date.now()}`;
+  await fs.rename(dataDir, backupDir).catch(async () => {
+    await fs.rm(dataDir, { recursive: true, force: true });
+  });
+  await fs.mkdir(dataDir, { recursive: true });
+  console.warn(`Embedded database reset. Previous data moved to ${path.basename(backupDir)}`);
+}
 
 async function execSql(sql: string): Promise<void> {
   if (pglite) {
@@ -75,11 +127,29 @@ export async function initDatabase(): Promise<void> {
   }
 }
 
+async function openEmbeddedDatabase(dataDir: string): Promise<PGlite> {
+  await acquireEmbeddedLock(dataDir);
+  const db = new PGlite(dataDir, { extensions: { pgcrypto } });
+  await db.query("SELECT 1");
+  return db;
+}
+
 async function initEmbedded(): Promise<void> {
   const dataDir = path.resolve(config.embeddedDbDir);
   await fs.mkdir(dataDir, { recursive: true });
-  pglite = new PGlite(dataDir, { extensions: { pgcrypto } });
   dbMode = "embedded";
+
+  try {
+    pglite = await openEmbeddedDatabase(dataDir);
+  } catch (err) {
+    console.error("Embedded database open failed:", err);
+    if (!isEmbeddedDbFailure(err)) throw err;
+    console.warn("Embedded database failed to open — creating a fresh database...");
+    await resetEmbeddedDataDir(dataDir);
+    pglite = await openEmbeddedDatabase(dataDir);
+  }
+
+  process.on("exit", releaseEmbeddedLock);
 
   const check = await pglite.query<{ exists: string | null }>(
     "SELECT to_regclass('public.users') AS exists"

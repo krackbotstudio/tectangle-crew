@@ -1,14 +1,14 @@
 import { NavLink } from "react-router-dom";
-import { Home, Users, Bot, FolderKanban, Activity, LogOut } from "lucide-react";
+import { Home, Users, Bot, FolderKanban, ClipboardList, LogOut } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../context/AuthContext";
 
 const items = [
   { to: "/dashboard", icon: Home, label: "Home", end: true },
-  { to: "/teams", icon: Users, label: "Teams" },
+  { to: "/teams", icon: Users, label: "Teams", end: true },
   { to: "/agents", icon: Bot, label: "Agents" },
   { to: "/projects", icon: FolderKanban, label: "Groups" },
-  { to: "/activity", icon: Activity, label: "Activity" },
+  { to: "/work", icon: ClipboardList, label: "Work" },
 ];
 
 export function BottomNav() {

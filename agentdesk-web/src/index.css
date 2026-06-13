@@ -265,11 +265,42 @@ body {
   font-weight: 500;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .landing-beam-pulse,
-  .landing-beam-flare,
-  .landing-beam-core,
-  .landing-beam-wide {
-    animation: none;
-  }
+.work-hub-flow .react-flow__edge-path {
+  stroke-linecap: round;
+}
+
+.work-hub-flow .react-flow__handle {
+  opacity: 1;
+  z-index: 20;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.work-hub-flow .react-flow__handle:hover {
+  transform: scale(1.35);
+  box-shadow: 0 0 8px currentColor;
+}
+
+.work-hub-flow .react-flow__connection-path {
+  stroke-linecap: round;
+}
+
+.work-hub-flow .react-flow__edges {
+  z-index: 2;
+}
+
+.work-hub-flow .react-flow__node {
+  z-index: 3;
+}
+
+.work-hub-flow .react-flow__node.dragging {
+  opacity: 0.92;
+  z-index: 10;
+}
+
+.work-hub-flow .react-flow__controls-button {
+  color: #8a8a8a;
+}
+
+.work-hub-flow .react-flow__minimap {
+  background: #141414;
 }

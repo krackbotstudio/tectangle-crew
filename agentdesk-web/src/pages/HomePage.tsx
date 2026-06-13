@@ -99,6 +99,47 @@ export function HomePage() {
 
         <section className="mt-8">
           <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold text-text-strong">Your project groups</h2>
+            <Link to="/projects" className="text-sm text-text-muted hover:text-text-strong">
+              View all
+            </Link>
+          </div>
+          {projects.length === 0 ? (
+            <DashboardCard className="text-sm text-text-muted">
+              No project groups yet. Create a project in{" "}
+              <Link to="/work" className="text-text-strong hover:underline">
+                Work
+              </Link>{" "}
+              or{" "}
+              <Link to="/projects/new" className="text-text-strong hover:underline">
+                add a group
+              </Link>
+              .
+            </DashboardCard>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {projects.map((project) => (
+                <Link key={project.id} to={`/projects/${project.id}`}>
+                  <DashboardCard hover className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-panel-elevated">
+                      <FolderKanban className="h-5 w-5 text-text-muted" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-text-strong">{project.title}</div>
+                      <div className="text-xs text-text-muted">
+                        {project.agentCount} agent{project.agentCount !== 1 ? "s" : ""}
+                        {project.workProjectId ? " · from Work" : ""}
+                      </div>
+                    </div>
+                  </DashboardCard>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="mt-8">
+          <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold text-text-strong">Your teams</h2>
             <Link to="/teams" className="text-sm text-text-muted hover:text-text-strong">
               View all

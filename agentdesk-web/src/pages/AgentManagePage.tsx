@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, NavLink, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  LayoutGrid,
   Sliders,
   Workflow,
   BookOpen,
@@ -18,6 +19,7 @@ import { AutomationsPage } from "./AutomationsPage";
 import { KnowledgePage } from "./KnowledgePage";
 import { SettingsPage } from "./SettingsPage";
 import { TasksPage } from "./TasksPage";
+import { AgentBoardTab } from "../components/agentboard/AgentBoardTab";
 import { listItemNavClass } from "../components/workspace/DashboardUI";
 import { AgentAvatar } from "../components/workspace/TagEditor";
 import { AgentIdentity, AgentIdentityBadge } from "../components/workspace/AgentIdentity";
@@ -25,6 +27,7 @@ import { TagEditor } from "../components/workspace/TagEditor";
 import { cn } from "../lib/utils";
 
 const tabs = [
+  { id: "board", label: "Agent board", shortLabel: "Board", icon: LayoutGrid },
   { id: "configure", label: "Configure", shortLabel: "Config", icon: Sliders },
   { id: "automations", label: "Automations", shortLabel: "n8n", icon: Workflow },
   { id: "knowledge", label: "Knowledge", shortLabel: "Docs", icon: BookOpen },
@@ -34,7 +37,7 @@ const tabs = [
 
 export function AgentManagePage() {
   const { agentSlug, tab } = useParams<{ agentSlug: string; tab?: string }>();
-  const activeTab = tab ?? "configure";
+  const activeTab = tab ?? "board";
 
   const { data, isLoading } = useQuery({
     queryKey: ["agent", agentSlug],
@@ -86,18 +89,26 @@ export function AgentManagePage() {
         </div>
 
         <nav
-          className="grid grid-cols-5 gap-1 border-t border-border-subtle px-2 py-2 sm:flex sm:gap-1 sm:overflow-x-auto sm:px-6 scrollbar-hide"
+          className="grid grid-cols-6 gap-1 border-t border-border-subtle px-2 py-2 sm:flex sm:gap-1 sm:overflow-x-auto sm:px-6 scrollbar-hide"
           aria-label="Agent management"
         >
           {tabs.map(({ id, label, shortLabel, icon: Icon }) => (
             <NavLink
               key={id}
-              to={id === "configure" ? `/agents/${agentSlug}` : `/agents/${agentSlug}/${id}`}
-              end={id === "configure"}
+              to={
+                id === "board"
+                  ? `/agents/${agentSlug}`
+                  : id === "configure"
+                    ? `/agents/${agentSlug}/configure`
+                    : `/agents/${agentSlug}/${id}`
+              }
+              end={id === "board"}
               title={label}
               className={({ isActive }) =>
                 listItemNavClass(
-                  isActive || (id === "configure" && !tab),
+                  isActive ||
+                    (id === "board" && !tab) ||
+                    (id === "configure" && tab === "configure"),
                   "flex flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] sm:min-w-0 sm:flex-1 sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm"
                 )
               }
@@ -113,7 +124,8 @@ export function AgentManagePage() {
       </header>
 
       <div className="min-h-0 flex-1">
-        {(activeTab === "configure" || !tab) && <AgentConfigureTab agentSlug={agent.slug} />}
+        {(activeTab === "board" || !tab) && <AgentBoardTab agent={agent} />}
+        {activeTab === "configure" && <AgentConfigureTab agentSlug={agent.slug} />}
         {activeTab === "automations" && <AutomationsPage embedded agentSlug={agent.slug} />}
         {activeTab === "knowledge" && <KnowledgePage embedded agentSlug={agent.slug} />}
         {activeTab === "settings" && <SettingsPage embedded agentSlug={agent.slug} />}

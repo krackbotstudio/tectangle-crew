@@ -11,7 +11,7 @@ import { TeamWorkspacePage } from "./pages/TeamWorkspacePage";
 import { ProjectsRedirectPage } from "./pages/ProjectsRedirectPage";
 import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { ProjectWorkspacePage } from "./pages/ProjectWorkspacePage";
-import { ActivityPage } from "./pages/ActivityPage";
+import { WorkHubPage } from "./pages/WorkHubPage";
 import { WorkspaceSettingsPage } from "./pages/WorkspaceSettingsPage";
 import { AgentsRedirectPage } from "./pages/AgentsRedirectPage";
 import { AgentManagePage } from "./pages/AgentManagePage";
@@ -44,7 +44,8 @@ export default function App() {
             <Route path="/agents" element={<AgentsRedirectPage />} />
             <Route path="/agents/:agentSlug" element={<AgentManagePage />} />
             <Route path="/agents/:agentSlug/:tab" element={<AgentManagePage />} />
-            <Route path="/activity" element={<ActivityPage />} />
+            <Route path="/work" element={<WorkHubPage />} />
+            <Route path="/activity" element={<Navigate to="/work" replace />} />
             <Route path="/settings" element={<WorkspaceSettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

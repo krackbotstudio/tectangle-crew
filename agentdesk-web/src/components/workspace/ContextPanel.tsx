@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Copy, Trash2, MoreVertical, Users, FolderKanban } from "lucide-react";
+import { Plus, Search, Copy, Trash2, MoreVertical, Users, FolderKanban, Settings2 } from "lucide-react";
 import { api, type Agent } from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { AgentAvatar } from "./TagEditor";
@@ -104,16 +104,27 @@ export function ContextPanel({ mode = "inline" }: { mode?: "inline" | "overlay" 
             </>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => {
-                  closeIfMobile();
-                  navigate("/teams");
-                }}
-                className="mb-2 px-2 text-xs text-text-muted underline-offset-2 hover:text-text-strong hover:underline"
+              <NavLink
+                to="/teams"
+                onClick={closeIfMobile}
+                className="mb-2 block px-2 text-xs text-text-muted underline-offset-2 hover:text-text-strong hover:underline"
               >
                 ← All teams
-              </button>
+              </NavLink>
+              <NavLink
+                to={`/teams/${teamSlug}`}
+                end
+                onClick={closeIfMobile}
+                className={({ isActive }) =>
+                  listItemNavClass(
+                    isActive,
+                    "mb-3 flex items-center gap-2 rounded-xl px-3 py-2 text-sm"
+                  )
+                }
+              >
+                <Settings2 className="h-4 w-4 shrink-0" />
+                Team setup
+              </NavLink>
               <div className="mb-1 flex items-center justify-between px-2">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-text-faint">
                   Active agents
@@ -227,7 +238,7 @@ function ProjectListItem({
   active,
   onNavigate,
 }: {
-  project: { id: string; title: string; agentCount: number; status: string };
+  project: { id: string; title: string; agentCount: number; status: string; workProjectId?: string | null };
   active: boolean;
   onNavigate?: () => void;
 }) {
@@ -241,6 +252,7 @@ function ProjectListItem({
     if (!confirm(`Delete project group "${project.title}"?`)) return;
     await api.deleteProject(project.id);
     queryClient.invalidateQueries({ queryKey: ["projects"] });
+    queryClient.invalidateQueries({ queryKey: ["work-hub"] });
     navigate("/projects");
   }
 
@@ -256,6 +268,7 @@ function ProjectListItem({
         <div className="text-sm font-medium">{project.title}</div>
         <div className="text-xs text-neutral-500">
           {project.agentCount} agent{project.agentCount !== 1 ? "s" : ""}
+          {project.workProjectId ? " · Work project" : ""}
         </div>
       </NavLink>
       <button

@@ -21,6 +21,35 @@ export interface TeamGroup {
   color: string;
   icon: string | null;
   agentCount: number;
+  rules?: string[];
+  constraints?: string[];
+}
+
+export interface TeamAssignedProject {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  teamAgentCount: number;
+  workProjectId: string | null;
+}
+
+export type TeamToolRequestStatus = "requested" | "approved" | "rejected" | "provisioned";
+
+export interface TeamToolRequest {
+  id: string;
+  teamGroupId: string;
+  projectId: string | null;
+  projectTitle: string | null;
+  toolName: string;
+  category: string;
+  reason: string | null;
+  url: string | null;
+  status: TeamToolRequestStatus;
+  requestedBy: string | null;
+  requesterName: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Agent {
@@ -51,6 +80,21 @@ export interface Agent {
   teamGroup?: { slug: string; name: string; color: string } | null;
 }
 
+export type AgentBoardColumnSide = "input" | "output";
+
+export type AgentBoardCard = {
+  id: string;
+  agentId: string;
+  columnSide: AgentBoardColumnSide;
+  cardType: string;
+  title: string;
+  description: string | null;
+  config: Record<string, unknown>;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export interface Project {
   id: string;
   title: string;
@@ -59,6 +103,7 @@ export interface Project {
   status: string;
   createdAt: string;
   agentCount: number;
+  workProjectId?: string | null;
 }
 
 export interface ProjectAgent {
@@ -95,6 +140,80 @@ export interface Task {
   n8nExecutionUrl: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export type WorkScheduleType = "one_time" | "scheduled" | "recurring";
+export type WorkItemStatus = "todo" | "in_progress" | "done" | "cancelled" | "scheduled";
+export type WorkPriority = "low" | "medium" | "high";
+
+export interface WorkProject {
+  id: string;
+  projectGroupId?: string | null;
+  title: string;
+  description: string | null;
+  status: string;
+  startDate: string | null;
+  dueDate: string | null;
+  activityCount: number;
+  taskCount: number;
+  createdAt: string;
+  updatedAt: string;
+  activities: WorkActivity[];
+}
+
+export interface WorkActivity {
+  id: string;
+  workProjectId: string | null;
+  linkedProjectIds?: string[];
+  sourceActivityId?: string | null;
+  projectTitle?: string;
+  title: string;
+  description: string | null;
+  agentId: string | null;
+  agentSlug: string | null;
+  agentName: string | null;
+  agentColor: string | null;
+  status: WorkItemStatus;
+  scheduleType: WorkScheduleType;
+  scheduledAt: string | null;
+  recurrenceRule: string | null;
+  recurrenceEndAt: string | null;
+  nextRunAt: string | null;
+  priority: WorkPriority;
+  createdAt: string;
+  updatedAt: string;
+  tasks?: WorkTask[];
+}
+
+export interface WorkTask {
+  id: string;
+  workProjectId: string | null;
+  activityId: string | null;
+  sourceTaskId?: string | null;
+  title: string;
+  description: string | null;
+  agentId: string | null;
+  agentSlug: string | null;
+  agentName: string | null;
+  agentColor: string | null;
+  status: WorkItemStatus;
+  scheduleType: WorkScheduleType;
+  scheduledAt: string | null;
+  recurrenceRule: string | null;
+  recurrenceEndAt: string | null;
+  nextRunAt: string | null;
+  priority: WorkPriority;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkHub {
+  projects: WorkProject[];
+  projectActivities: WorkActivity[];
+  standaloneActivities: WorkActivity[];
+  standaloneTasks: WorkTask[];
+  allActivities: WorkActivity[];
+  allTasks: WorkTask[];
 }
 
 export interface ChatMessage {
@@ -240,7 +359,35 @@ export const api = {
   getTeams: () => apiFetch<{ teams: TeamGroup[] }>("/teams"),
 
   getTeam: (slug: string) =>
-    apiFetch<{ team: TeamGroup; agents: Agent[] }>(`/teams/${slug}`),
+    apiFetch<{
+      team: TeamGroup;
+      agents: Agent[];
+      projects: TeamAssignedProject[];
+      toolRequests: TeamToolRequest[];
+    }>(`/teams/${slug}`),
+
+  updateTeam: (
+    slug: string,
+    data: { description?: string | null; rules?: string[]; constraints?: string[] }
+  ) => apiFetch<{ team: TeamGroup }>(`/teams/${slug}`, { method: "PATCH", body: JSON.stringify(data) }),
+
+  createTeamToolRequest: (
+    slug: string,
+    data: { projectId?: string; toolName: string; category?: string; reason?: string; url?: string }
+  ) =>
+    apiFetch<{ request: TeamToolRequest }>(`/teams/${slug}/tool-requests`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateTeamToolRequest: (slug: string, requestId: string, data: { status: TeamToolRequestStatus }) =>
+    apiFetch<{ request: TeamToolRequest }>(`/teams/${slug}/tool-requests/${requestId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteTeamToolRequest: (slug: string, requestId: string) =>
+    apiFetch<{ deleted: boolean }>(`/teams/${slug}/tool-requests/${requestId}`, { method: "DELETE" }),
 
   createTeam: (data: { name: string; description?: string; color?: string; icon?: string }) =>
     apiFetch<{ team: TeamGroup }>("/teams", { method: "POST", body: JSON.stringify(data) }),
@@ -251,6 +398,39 @@ export const api = {
     ),
 
   getAgent: (slug: string) => apiFetch<{ agent: Agent }>(`/agents/${slug}`),
+
+  getAgentBoard: (slug: string) =>
+    apiFetch<{ cards: AgentBoardCard[] }>(`/agents/${slug}/board`),
+
+  createAgentBoardCard: (
+    slug: string,
+    data: {
+      columnSide: AgentBoardColumnSide;
+      cardType: string;
+      title: string;
+      description?: string;
+      config?: Record<string, unknown>;
+      sortOrder?: number;
+    }
+  ) => apiFetch<{ card: AgentBoardCard }>(`/agents/${slug}/board/cards`, { method: "POST", body: JSON.stringify(data) }),
+
+  updateAgentBoardCard: (
+    slug: string,
+    cardId: string,
+    data: {
+      title?: string;
+      description?: string;
+      config?: Record<string, unknown>;
+      sortOrder?: number;
+    }
+  ) =>
+    apiFetch<{ card: AgentBoardCard }>(`/agents/${slug}/board/cards/${cardId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteAgentBoardCard: (slug: string, cardId: string) =>
+    apiFetch<{ deleted: boolean }>(`/agents/${slug}/board/cards/${cardId}`, { method: "DELETE" }),
 
   updateAgent: (slug: string, data: Partial<Agent>) =>
     apiFetch<{ agent: Agent }>(`/agents/${slug}`, {
@@ -321,6 +501,120 @@ export const api = {
     ),
 
   getRecentTasks: () => apiFetch<{ tasks: Task[] }>("/tasks/recent"),
+
+  getWorkHub: () => apiFetch<WorkHub>("/work/hub"),
+
+  createWorkProject: (data: {
+    title: string;
+    description?: string;
+    status?: string;
+    startDate?: string | null;
+    dueDate?: string | null;
+  }) => apiFetch<{ project: WorkProject }>("/work/projects", { method: "POST", body: JSON.stringify(data) }),
+
+  updateWorkProject: (
+    id: string,
+    data: { title?: string; description?: string; status?: string; startDate?: string | null; dueDate?: string | null }
+  ) => apiFetch<{ updated: boolean }>(`/work/projects/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+
+  deleteWorkProject: (id: string) =>
+    apiFetch<{ deleted: boolean }>(`/work/projects/${id}`, { method: "DELETE" }),
+
+  createWorkActivity: (data: {
+    title: string;
+    description?: string;
+    workProjectId?: string | null;
+    agentId?: string | null;
+    scheduleType?: WorkScheduleType;
+    scheduledAt?: string | null;
+    recurrenceRule?: string | null;
+    recurrenceEndAt?: string | null;
+    priority?: WorkPriority;
+    status?: WorkItemStatus;
+  }) => apiFetch<{ activity: WorkActivity }>("/work/activities", { method: "POST", body: JSON.stringify(data) }),
+
+  updateWorkActivity: (
+    id: string,
+    data: Partial<{
+      title: string;
+      description: string;
+      workProjectId: string | null;
+      agentId: string | null;
+      scheduleType: WorkScheduleType;
+      scheduledAt: string | null;
+      recurrenceRule: string | null;
+      recurrenceEndAt: string | null;
+      priority: WorkPriority;
+      status: WorkItemStatus;
+    }>
+  ) => apiFetch<{ updated: boolean }>(`/work/activities/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+
+  deleteWorkActivity: (id: string) =>
+    apiFetch<{ deleted: boolean }>(`/work/activities/${id}`, { method: "DELETE" }),
+
+  createWorkTask: (data: {
+    title: string;
+    description?: string;
+    workProjectId?: string | null;
+    activityId?: string | null;
+    agentId?: string | null;
+    scheduleType?: WorkScheduleType;
+    scheduledAt?: string | null;
+    recurrenceRule?: string | null;
+    recurrenceEndAt?: string | null;
+    priority?: WorkPriority;
+    status?: WorkItemStatus;
+  }) => apiFetch<{ task: WorkTask }>("/work/tasks", { method: "POST", body: JSON.stringify(data) }),
+
+  updateWorkTask: (
+    id: string,
+    data: Partial<{
+      title: string;
+      description: string;
+      workProjectId: string | null;
+      activityId: string | null;
+      agentId: string | null;
+      scheduleType: WorkScheduleType;
+      scheduledAt: string | null;
+      recurrenceRule: string | null;
+      recurrenceEndAt: string | null;
+      priority: WorkPriority;
+      status: WorkItemStatus;
+    }>
+  ) => apiFetch<{ updated: boolean }>(`/work/tasks/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+
+  deleteWorkTask: (id: string) =>
+    apiFetch<{ deleted: boolean }>(`/work/tasks/${id}`, { method: "DELETE" }),
+
+  linkWorkActivity: (activityId: string, workProjectId: string) =>
+    apiFetch<{ linked: boolean }>(`/work/activities/${activityId}/link`, {
+      method: "POST",
+      body: JSON.stringify({ workProjectId }),
+    }),
+
+  unlinkWorkActivity: (activityId: string, workProjectId: string) =>
+    apiFetch<{ unlinked: boolean }>(`/work/activities/${activityId}/unlink`, {
+      method: "POST",
+      body: JSON.stringify({ workProjectId }),
+    }),
+
+  duplicateWorkActivity: (
+    id: string,
+    data?: { workProjectId?: string | null; copyTasks?: boolean }
+  ) =>
+    apiFetch<{ activity: WorkActivity }>(`/work/activities/${id}/duplicate`, {
+      method: "POST",
+      body: JSON.stringify(data ?? {}),
+    }),
+
+  duplicateWorkTask: (
+    id: string,
+    data?: { activityId?: string | null; workProjectId?: string | null }
+  ) =>
+    apiFetch<{ task: WorkTask }>(`/work/tasks/${id}/duplicate`, {
+      method: "POST",
+      body: JSON.stringify(data ?? {}),
+    }),
 
   getMessages: (slug: string) =>
     apiFetch<{ messages: ChatMessage[] }>(`/chat/${slug}/messages`),

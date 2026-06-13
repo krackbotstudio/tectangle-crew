@@ -4,7 +4,7 @@ import {
   Users,
   Bot,
   FolderKanban,
-  Activity,
+  ClipboardList,
   Settings,
   Search,
   LayoutGrid,
@@ -15,10 +15,10 @@ import { AppLogo } from "../AppLogo";
 
 const items = [
   { to: "/dashboard", icon: Home, label: "Dashboard", end: true },
-  { to: "/teams", icon: Users, label: "Teams" },
+  { to: "/teams", icon: Users, label: "Teams", end: true },
   { to: "/agents", icon: Bot, label: "Agents" },
   { to: "/projects", icon: FolderKanban, label: "Groups" },
-  { to: "/activity", icon: Activity, label: "Activity" },
+  { to: "/work", icon: ClipboardList, label: "Work" },
 ];
 
 export function NavRail() {

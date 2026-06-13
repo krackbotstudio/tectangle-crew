@@ -2,11 +2,18 @@ import { Router } from "express";
 import { query } from "../db.js";
 import { authRequired } from "../middleware/auth.js";
 import { getAccessibleProjectIds, canAccessProject } from "../services/access.js";
+import {
+  deleteWorkProjectForGroup,
+  ensureWorkProjectGroupsLinked,
+  getWorkProjectIdForGroup,
+} from "../services/workProjectGroups.js";
 
 const router = Router();
 
 router.get("/", authRequired, async (req, res) => {
   try {
+    await ensureWorkProjectGroupsLinked();
+
     const accessible = await getAccessibleProjectIds(req.user!);
     const params: unknown[] = [];
     let where = "";
@@ -27,12 +34,14 @@ router.get("/", authRequired, async (req, res) => {
       status: string;
       created_at: string;
       agent_count: string;
+      work_project_id: string | null;
     }>(
-      `SELECT p.*, COUNT(pa.id)::text AS agent_count
+      `SELECT p.*, COUNT(pa.id)::text AS agent_count, wp.id AS work_project_id
        FROM projects p
        LEFT JOIN project_agents pa ON pa.project_id = p.id
+       LEFT JOIN work_projects wp ON wp.project_group_id = p.id
        ${where}
-       GROUP BY p.id
+       GROUP BY p.id, wp.id
        ORDER BY p.created_at DESC`,
       params
     );
@@ -46,6 +55,7 @@ router.get("/", authRequired, async (req, res) => {
         status: p.status ?? "active",
         createdAt: p.created_at,
         agentCount: parseInt(p.agent_count, 10),
+        workProjectId: p.work_project_id,
       })),
     });
   } catch (error) {
@@ -128,6 +138,8 @@ router.get("/:id", authRequired, async (req, res) => {
     [project.id]
   );
 
+  const workProjectId = await getWorkProjectIdForGroup(project.id);
+
   res.json({
     project: {
       id: project.id,
@@ -136,6 +148,7 @@ router.get("/:id", authRequired, async (req, res) => {
       description: project.description,
       status: project.status,
       createdAt: project.created_at,
+      workProjectId,
     },
     agents: agentsResult.rows.map((a) => ({
       membershipId: a.membership_id,
@@ -322,10 +335,30 @@ router.patch("/:id", authRequired, async (req, res) => {
     res.status(404).json({ error: "Project group not found" });
     return;
   }
+
+  const workProjectId = await getWorkProjectIdForGroup(req.params.id);
+  if (workProjectId && (title !== undefined || description !== undefined || status !== undefined)) {
+    await query(
+      `UPDATE work_projects SET
+        title = COALESCE($2, title),
+        description = COALESCE($3, description),
+        status = COALESCE($4, status),
+        updated_at = NOW()
+       WHERE id = $1`,
+      [
+        workProjectId,
+        title?.trim() ?? null,
+        description?.trim() ?? null,
+        status ?? null,
+      ]
+    );
+  }
+
   res.json({ updated: true });
 });
 
 router.delete("/:id", authRequired, async (req, res) => {
+  await deleteWorkProjectForGroup(req.params.id);
   await query("DELETE FROM projects WHERE id = $1", [req.params.id]);
   res.json({ deleted: true });
 });
