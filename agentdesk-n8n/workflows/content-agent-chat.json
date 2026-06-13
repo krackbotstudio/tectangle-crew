@@ -1,0 +1,99 @@
+{
+  "name": "content-agent-chat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "content-agent-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "content-agent-chat"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.AGENTDESK_API_URL || 'http://host.docker.internal:3001'}}/api/tasks/log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-AgentDesk-Secret", "value": "agentdesk-dev-secret" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"taskId\": \"{{ $json.body.taskId }}\",\n  \"agentSlug\": \"content\",\n  \"title\": \"Chat: \" + ($json.body.message || '').slice(0, 80),\n  \"status\": \"running\",\n  \"currentStep\": \"Calling Claude\"\n}"
+      },
+      "id": "log-running",
+      "name": "Log Running",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "model": "claude-sonnet-4-20250514",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "={{ ($json.body.systemPrompt || 'You are the Content Agent.') + '\\n\\nRelevant knowledge:\\n' + ($json.body.knowledgeContext || 'None yet.') }}"
+        }
+      },
+      "id": "claude",
+      "name": "Claude",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "anthropicApi": { "id": "CONFIGURE_ME", "name": "Anthropic API" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.AGENTDESK_API_URL || 'http://host.docker.internal:3001'}}/api/tasks/log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-AgentDesk-Secret", "value": "agentdesk-dev-secret" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"taskId\": \"{{ $('Webhook').item.json.body.taskId }}\",\n  \"agentSlug\": \"content\",\n  \"status\": \"done\",\n  \"currentStep\": \"Response ready\"\n}"
+      },
+      "id": "log-done",
+      "name": "Log Done",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { reply: $json.text || $json.content || $json.message || 'No response from Claude.', taskId: $('Webhook').item.json.body.taskId } }}"
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Log Running", "type": "main", "index": 0 }]] },
+    "Log Running": { "main": [[{ "node": "Claude", "type": "main", "index": 0 }]] },
+    "Claude": { "main": [[{ "node": "Log Done", "type": "main", "index": 0 }]] },
+    "Log Done": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": false }
+}

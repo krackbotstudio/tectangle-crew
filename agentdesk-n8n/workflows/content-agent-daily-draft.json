@@ -1,0 +1,82 @@
+{
+  "name": "content-agent-daily-draft",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 9 * * *" }] }
+      },
+      "id": "schedule",
+      "name": "Daily 9 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.AGENTDESK_API_URL || 'http://host.docker.internal:3001'}}/api/tasks/log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-AgentDesk-Secret", "value": "agentdesk-dev-secret" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"agentSlug\": \"content\",\n  \"title\": \"Daily content draft\",\n  \"status\": \"running\",\n  \"currentStep\": \"Generating drafts\"\n}"
+      },
+      "id": "log-start",
+      "name": "Log Start",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "model": "claude-sonnet-4-20250514",
+        "text": "Generate 3 LinkedIn post drafts for today based on general B2B SaaS themes. Label them Draft 1, 2, 3.",
+        "options": {
+          "systemMessage": "You are the Content Agent. Produce drafts only — never publish. Match brand voice: clear, confident, helpful."
+        }
+      },
+      "id": "claude",
+      "name": "Claude Drafts",
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "anthropicApi": { "id": "CONFIGURE_ME", "name": "Anthropic API" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.AGENTDESK_API_URL || 'http://host.docker.internal:3001'}}/api/tasks/log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-AgentDesk-Secret", "value": "agentdesk-dev-secret" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"taskId\": \"{{ $('Log Start').item.json.task.id }}\",\n  \"agentSlug\": \"content\",\n  \"status\": \"done\",\n  \"currentStep\": \"Drafts generated\",\n  \"outputRef\": \"See n8n execution output\"\n}"
+      },
+      "id": "log-done",
+      "name": "Log Done",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Daily 9 AM": { "main": [[{ "node": "Log Start", "type": "main", "index": 0 }]] },
+    "Log Start": { "main": [[{ "node": "Claude Drafts", "type": "main", "index": 0 }]] },
+    "Claude Drafts": { "main": [[{ "node": "Log Done", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

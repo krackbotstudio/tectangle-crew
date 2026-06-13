@@ -1,0 +1,16 @@
+{
+  "name": "agentdesk",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "install:all": "npm install --prefix agentdesk-api && npm install --prefix agentdesk-web",
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev --prefix agentdesk-api\" \"npm run dev --prefix agentdesk-web\"",
+    "seed": "npm run seed --prefix agentdesk-api",
+    "build": "npm run build --prefix agentdesk-web",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

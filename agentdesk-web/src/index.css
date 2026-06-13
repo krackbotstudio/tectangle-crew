@@ -1,0 +1,275 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #262626;
+  --color-brand-100: #404040;
+  --color-brand-300: #737373;
+  --color-brand-500: #737373;
+  --color-brand-600: #525252;
+  --color-brand-700: #a3a3a3;
+
+  --color-canvas: #0c0c0c;
+  --color-sidebar: #000000;
+  --color-panel: #141414;
+  --color-panel-elevated: #1a1a1a;
+  --color-panel-hover: #222222;
+  --color-border: #2a2a2a;
+  --color-border-subtle: #1f1f1f;
+
+  /* Light grey accents (replaces white) */
+  --color-accent-light: #a3a3a3;
+  --color-accent-light-hover: #b3b3b3;
+  --color-accent-fg: #141414;
+
+  /* Dark grey accents for buttons */
+  --color-accent: #525252;
+  --color-accent-hover: #606060;
+  --color-accent-muted-fg: #e0e0e0;
+
+  /* Sidebar / list selection (dark grey, readable on hover) */
+  --color-list-selected: #383838;
+  --color-list-selected-hover: #484848;
+
+  --color-text: #c8c8c8;
+  --color-text-muted: #8a8a8a;
+  --color-text-faint: #606060;
+  --color-text-strong: #dcdcdc;
+
+  --color-surface: #141414;
+  --color-surface-alt: #0c0c0c;
+  --color-surface-hover: #222222;
+
+  /* Agent Desk brand purple (logo) */
+  --color-brand-purple: #863bff;
+  --color-brand-purple-bright: #7e14ff;
+  --color-brand-purple-soft: #ede6ff;
+  --color-brand-purple-glow: rgba(134, 59, 255, 0.55);
+
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --radius-card: 1rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Landing page cinematic hero */
+.landing-grain {
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  opacity: 0.35;
+}
+
+.landing-beam-wide {
+  background: linear-gradient(
+    to top,
+    transparent,
+    rgba(134, 59, 255, 0.08) 20%,
+    rgba(126, 20, 255, 0.2) 50%,
+    rgba(134, 59, 255, 0.08) 80%,
+    transparent
+  );
+  filter: blur(28px);
+  animation: landing-beam-glow 4s ease-in-out infinite;
+}
+
+/* Beam column */
+.landing-beam-container {
+  isolation: isolate;
+}
+
+.landing-beam-core {
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    rgba(134, 59, 255, 0.2) 12%,
+    #7e14ff 40%,
+    #c4b5fd 65%,
+    #ede6ff 78%,
+    #863bff 92%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 30px 6px rgba(134, 59, 255, 0.5),
+    0 0 80px 24px rgba(126, 20, 255, 0.22);
+  animation: landing-beam-glow 3s ease-in-out infinite;
+}
+
+.landing-beam-track {
+  overflow: hidden;
+  mask-image: linear-gradient(to top, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+/* Energy pulses — bottom to top */
+.landing-beam-pulse {
+  position: absolute;
+  left: 50%;
+  width: 100%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  pointer-events: none;
+  will-change: top, opacity, filter;
+}
+
+.landing-beam-pulse--primary {
+  height: 28%;
+  min-height: 5rem;
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    rgba(134, 59, 255, 0.3) 15%,
+    rgba(237, 230, 255, 0.95) 45%,
+    #ffffff 55%,
+    rgba(237, 230, 255, 0.9) 70%,
+    rgba(126, 20, 255, 0.4) 90%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 16px 3px rgba(255, 255, 255, 0.55),
+    0 0 40px 10px rgba(134, 59, 255, 0.65);
+  animation: landing-beam-shoot 2.4s cubic-bezier(0.4, 0, 0.15, 1) infinite;
+}
+
+.landing-beam-pulse--fast {
+  height: 12%;
+  min-height: 2.5rem;
+  width: 60%;
+  background: linear-gradient(
+    to top,
+    transparent,
+    rgba(255, 255, 255, 0.95) 40%,
+    rgba(237, 230, 255, 0.6) 70%,
+    transparent
+  );
+  box-shadow: 0 0 12px 2px rgba(255, 255, 255, 0.7);
+  animation: landing-beam-shoot 1.1s cubic-bezier(0.25, 0.1, 0.1, 1) infinite;
+  animation-delay: 0.35s;
+}
+
+.landing-beam-pulse--trail {
+  height: 18%;
+  min-height: 3.5rem;
+  width: 140%;
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    rgba(126, 20, 255, 0.5) 30%,
+    rgba(237, 230, 255, 0.75) 55%,
+    transparent 100%
+  );
+  filter: blur(1px);
+  animation: landing-beam-shoot 3.2s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+  animation-delay: 1.2s;
+}
+
+/* Soft flare that follows the main pulse */
+.landing-beam-flare {
+  background: radial-gradient(
+    ellipse 80% 12% at 50% 100%,
+    rgba(134, 59, 255, 0.35) 0%,
+    transparent 70%
+  );
+  animation: landing-beam-flare-rise 2.4s cubic-bezier(0.4, 0, 0.15, 1) infinite;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+@keyframes landing-beam-shoot {
+  0% {
+    top: 105%;
+    opacity: 0;
+    filter: brightness(0.6) blur(0px);
+  }
+  6% {
+    opacity: 1;
+    filter: brightness(1.2) blur(0px);
+  }
+  70% {
+    opacity: 1;
+    filter: brightness(1.4) blur(0.5px);
+  }
+  100% {
+    top: -35%;
+    opacity: 0;
+    filter: brightness(1.8) blur(1px);
+  }
+}
+
+@keyframes landing-beam-flare-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scaleY(0.3);
+  }
+  15% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120%) scaleY(1.2);
+  }
+}
+
+@keyframes landing-beam-glow {
+  0%,
+  100% {
+    opacity: 0.88;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.12);
+  }
+}
+
+.landing-mountain {
+  background: linear-gradient(to top, #050505 0%, transparent 100%);
+}
+
+.landing-nav-link {
+  letter-spacing: 0.18em;
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-beam-pulse,
+  .landing-beam-flare,
+  .landing-beam-core,
+  .landing-beam-wide {
+    animation: none;
+  }
+}
