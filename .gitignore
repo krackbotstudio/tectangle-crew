@@ -4,3 +4,4 @@ uploads
 data
 .env
 *.log
+cursor
