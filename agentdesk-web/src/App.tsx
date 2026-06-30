@@ -13,8 +13,12 @@ import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { ProjectWorkspacePage } from "./pages/ProjectWorkspacePage";
 import { WorkHubPage } from "./pages/WorkHubPage";
 import { WorkspaceSettingsPage } from "./pages/WorkspaceSettingsPage";
+import { AppStorePage } from "./pages/AppStorePage";
+import { ConsolePage } from "./pages/ConsolePage";
 import { AgentsRedirectPage } from "./pages/AgentsRedirectPage";
 import { AgentManagePage } from "./pages/AgentManagePage";
+import { TemplateLibraryPage } from "./pages/TemplateLibraryPage";
+import { SocialMediaPage } from "./pages/SocialMediaPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,9 +46,13 @@ export default function App() {
             <Route path="/projects/:projectId" element={<ProjectWorkspacePage />} />
             <Route path="/projects/:projectId/agents/:agentSlug" element={<ProjectWorkspacePage />} />
             <Route path="/agents" element={<AgentsRedirectPage />} />
+            <Route path="/templates" element={<TemplateLibraryPage />} />
+            <Route path="/social" element={<SocialMediaPage />} />
             <Route path="/agents/:agentSlug" element={<AgentManagePage />} />
             <Route path="/agents/:agentSlug/:tab" element={<AgentManagePage />} />
             <Route path="/work" element={<WorkHubPage />} />
+            <Route path="/app-store" element={<AppStorePage />} />
+            <Route path="/console" element={<ConsolePage />} />
             <Route path="/activity" element={<Navigate to="/work" replace />} />
             <Route path="/settings" element={<WorkspaceSettingsPage />} />
           </Route>

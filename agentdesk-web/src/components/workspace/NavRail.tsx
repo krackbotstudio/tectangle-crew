@@ -8,6 +8,10 @@ import {
   Settings,
   Search,
   LayoutGrid,
+  Share2,
+  Layers,
+  Store,
+  Terminal,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { listItemNavClass } from "./DashboardUI";
@@ -19,6 +23,9 @@ const items = [
   { to: "/agents", icon: Bot, label: "Agents" },
   { to: "/projects", icon: FolderKanban, label: "Groups" },
   { to: "/work", icon: ClipboardList, label: "Work" },
+  { to: "/social", icon: Share2, label: "Social" },
+  { to: "/templates", icon: Layers, label: "Templates" },
+  { to: "/app-store", icon: Store, label: "App Store" },
 ];
 
 export function NavRail() {
@@ -27,7 +34,7 @@ export function NavRail() {
   return (
     <aside className="hidden w-[240px] shrink-0 flex-col border-r border-border-subtle bg-sidebar px-4 py-5 lg:flex">
       <div className="mb-6 px-1">
-        <AppLogo showWordmark subtitle="Workspace" linkToHome />
+        <AppLogo showWordmark linkToHome />
       </div>
 
       <div className="relative mb-5">
@@ -64,6 +71,16 @@ export function NavRail() {
       <div className="mt-6 mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-text-faint">
         Management
       </div>
+
+      <NavLink
+        to="/console"
+        className={({ isActive }) =>
+          listItemNavClass(isActive, "flex items-center gap-3 px-3 py-2.5 text-sm")
+        }
+      >
+        <Terminal className="h-4 w-4 shrink-0" />
+        <span>Console</span>
+      </NavLink>
 
       <NavLink
         to="/settings"

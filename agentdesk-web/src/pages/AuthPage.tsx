@@ -4,6 +4,7 @@ import { LogIn, Mail, Lock, User, ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AppLogo } from "../components/AppLogo";
 import { SocialAuthButtons } from "../components/auth/SocialAuthButtons";
+import { LOGO_WORDMARK } from "../lib/brand";
 import { cn } from "../lib/utils";
 
 type AuthMode = "signin" | "signup";
@@ -50,7 +51,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   return (
     <div className="flex min-h-full bg-canvas">
       <div className="hidden w-1/2 flex-col justify-between border-r border-border-subtle bg-sidebar p-10 lg:flex">
-        <AppLogo showWordmark subtitle="Workspace" linkToHome />
+        <AppLogo showWordmark linkToHome />
         <div>
           <h1 className="text-3xl font-semibold leading-tight text-text-strong">
             {isSignup ? "Create your workspace account" : "Welcome back"}
@@ -85,7 +86,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
                 {isSignup ? "Create account" : "Sign in"}
               </h1>
               <p className="mt-1 text-sm text-text-muted">
-                {isSignup ? "Get started with Agent Desk" : "Access your workspace"}
+                {isSignup ? `Get started with ${LOGO_WORDMARK}` : "Access your workspace"}
               </p>
             </div>
 

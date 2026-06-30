@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
+  Layers,
   ExternalLink,
   FolderKanban,
   Plus,
@@ -66,6 +67,19 @@ export function TeamConfigurePage({
     mutationFn: (payload: { rules?: string[]; constraints?: string[]; description?: string | null }) =>
       api.updateTeam(teamSlug, payload),
     onSuccess: invalidate,
+  });
+
+  const stackMutation = useMutation({
+    mutationFn: (stackId: string) => {
+      if (!selectedProjectId) throw new Error("Select a project first");
+      return api.applyProjectToolStack(selectedProjectId, stackId);
+    },
+    onSuccess: () => {
+      invalidate();
+      if (selectedProjectId) {
+        queryClient.invalidateQueries({ queryKey: ["project-tools", selectedProjectId] });
+      }
+    },
   });
 
   const createRequestMutation = useMutation({
@@ -227,7 +241,7 @@ export function TeamConfigurePage({
                 Tools & applications
               </div>
               <p className="mt-1 text-xs text-text-muted">
-                Request apps and integrations needed for assigned projects.
+                Assign tools for project work — Sheets, Canva, Meta, X, LinkedIn, and more.
               </p>
             </div>
             <div className="flex flex-1 flex-col gap-4 p-4">
@@ -236,20 +250,34 @@ export function TeamConfigurePage({
                   New request
                 </div>
                 {projects.length > 0 && (
-                  <select
-                    value={selectedProjectId}
-                    onChange={(e) => setSelectedProjectId(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-panel px-3 py-2 text-sm text-text outline-none focus:border-neutral-500"
-                  >
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title}
-                      </option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      value={selectedProjectId}
+                      onChange={(e) => setSelectedProjectId(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-panel px-3 py-2 text-sm text-text outline-none focus:border-neutral-500"
+                    >
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.title}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => stackMutation.mutate("social-media-management")}
+                      disabled={stackMutation.isPending || !selectedProjectId}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent-light bg-accent-light/20 px-3 py-2 text-sm font-medium text-accent-fg transition hover:bg-accent-light/30 disabled:opacity-50"
+                    >
+                      <Layers className="h-4 w-4" />
+                      Add social media stack
+                    </button>
+                    <p className="text-[11px] text-text-faint">
+                      Sheets + Canva/Figma + Meta (IG, FB, WhatsApp) + X + LinkedIn + scheduling
+                    </p>
+                  </>
                 )}
                 <div className="flex flex-wrap gap-1.5">
-                  {TOOL_CATALOG.slice(0, 8).map((tool) => (
+                  {TOOL_CATALOG.map((tool) => (
                     <button
                       key={tool.name}
                       type="button"
@@ -390,7 +418,7 @@ function ProjectCard({
           onClick={(e) => e.stopPropagation()}
           className="ml-auto text-text-muted underline-offset-2 hover:text-text-strong hover:underline"
         >
-          Open group
+          Open group · tools
         </Link>
       </div>
     </button>

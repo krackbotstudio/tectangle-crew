@@ -1,4 +1,5 @@
 import { query } from "../db.js";
+import { instantiateAgentForProject } from "./projectAgentInstances.js";
 
 interface WorkProjectRow {
   id: string;
@@ -108,16 +109,38 @@ export async function syncAgentToProjectGroup(
   const row = agent.rows[0];
   if (!row) return;
 
-  const skills = typeof row.skills === "string" ? row.skills : JSON.stringify(row.skills ?? []);
-  const rules = typeof row.rules === "string" ? row.rules : JSON.stringify(row.rules ?? []);
+  const project = await query<{ title: string }>("SELECT title FROM projects WHERE id = $1", [
+    projectGroupId,
+  ]);
+
+  const instance = await instantiateAgentForProject({
+    sourceAgentId: agentId,
+    projectId: projectGroupId,
+    projectTitle: project.rows[0]?.title,
+  });
+
+  const instanceRow = await query<{ skills: unknown; rules: unknown; constraints: unknown }>(
+    "SELECT skills, rules, constraints FROM agents WHERE id = $1",
+    [instance.agentId]
+  );
+  const skills =
+    typeof instanceRow.rows[0]?.skills === "string"
+      ? instanceRow.rows[0].skills
+      : JSON.stringify(instanceRow.rows[0]?.skills ?? row.skills ?? []);
+  const rules =
+    typeof instanceRow.rows[0]?.rules === "string"
+      ? instanceRow.rows[0].rules
+      : JSON.stringify(instanceRow.rows[0]?.rules ?? row.rules ?? []);
   const constraints =
-    typeof row.constraints === "string" ? row.constraints : JSON.stringify(row.constraints ?? []);
+    typeof instanceRow.rows[0]?.constraints === "string"
+      ? instanceRow.rows[0].constraints
+      : JSON.stringify(instanceRow.rows[0]?.constraints ?? row.constraints ?? []);
 
   await query(
     `INSERT INTO project_agents (project_id, agent_id, skills, rules, constraints)
      VALUES ($1, $2, $3::jsonb, $4::jsonb, $5::jsonb)
      ON CONFLICT (project_id, agent_id) DO NOTHING`,
-    [projectGroupId, agentId, skills, rules, constraints]
+    [projectGroupId, instance.agentId, skills, rules, constraints]
   );
 }
 
@@ -127,4 +150,51 @@ export async function getWorkProjectIdForGroup(projectGroupId: string): Promise<
     [projectGroupId]
   );
   return result.rows[0]?.id ?? null;
+}
+
+function mapGroupStatusToWork(status: string): string {
+  if (status === "archived") return "archived";
+  if (status === "planning") return "active";
+  return status || "active";
+}
+
+/** Create a work hub project card linked to an existing project group (Groups). */
+export async function createWorkProjectForProjectGroup(
+  projectGroupId: string,
+  createdBy: string
+): Promise<{ workProjectId: string; projectGroupId: string }> {
+  const existing = await query<{ id: string }>(
+    "SELECT id FROM work_projects WHERE project_group_id = $1",
+    [projectGroupId]
+  );
+  if (existing.rows[0]) {
+    const err = new Error("This project group is already on the Work canvas") as Error & { code: string };
+    err.code = "ALREADY_LINKED";
+    throw err;
+  }
+
+  const groupResult = await query<{
+    title: string;
+    description: string | null;
+    goal: string | null;
+    status: string;
+  }>("SELECT title, description, goal, status FROM projects WHERE id = $1", [projectGroupId]);
+
+  const group = groupResult.rows[0];
+  if (!group) {
+    const err = new Error("Project group not found") as Error & { code: string };
+    err.code = "NOT_FOUND";
+    throw err;
+  }
+
+  const description = group.description?.trim() || group.goal?.trim() || null;
+
+  const inserted = await query<{ id: string }>(
+    `INSERT INTO work_projects (title, description, status, project_group_id, created_by)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id`,
+    [group.title, description, mapGroupStatusToWork(group.status), projectGroupId, createdBy]
+  );
+
+  return { workProjectId: inserted.rows[0].id, projectGroupId };
 }

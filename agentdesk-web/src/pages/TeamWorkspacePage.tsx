@@ -1,7 +1,8 @@
-import { useParams, NavLink } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useParams, NavLink, useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, ListTodo, BookOpen, Settings, Workflow } from "lucide-react";
 import { api } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import { AgentChatView } from "../components/AgentChatView";
 import { TasksPage } from "./TasksPage";
 import { KnowledgePage } from "./KnowledgePage";
@@ -22,6 +23,9 @@ const tabs = [
 ];
 
 export function TeamWorkspacePage() {
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const { teamSlug, agentSlug, tab } = useParams<{
     teamSlug: string;
     agentSlug?: string;
@@ -31,6 +35,21 @@ export function TeamWorkspacePage() {
   const { data: teamData, isLoading } = useQuery({
     queryKey: ["team", teamSlug],
     queryFn: () => api.getTeam(teamSlug!),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (isActive: boolean) => api.updateAgent(agentSlug!, { isActive }),
+    onSuccess: (_, isActive) => {
+      queryClient.invalidateQueries({ queryKey: ["agent", agentSlug] });
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+      queryClient.invalidateQueries({ queryKey: ["team", teamSlug] });
+      if (!isActive) {
+        navigate(`/teams/${teamSlug}`);
+      }
+    },
+    onError: (err: Error) => {
+      alert(err.message);
+    },
   });
 
   if (isLoading) {
@@ -63,9 +82,43 @@ export function TeamWorkspacePage() {
         <div className="flex items-start gap-3 px-4 py-3 sm:px-6">
           <AgentAvatar name={agent?.name ?? agentSlug} color={agent?.avatarColor} />
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-base font-semibold text-text-strong sm:text-lg">
-              {agent?.name ?? agentSlug}
-            </h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="truncate text-base font-semibold text-text-strong sm:text-lg">
+                {agent?.name ?? agentSlug}
+              </h1>
+              {agent && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={!isAdmin || toggleMutation.isPending}
+                    onClick={() => toggleMutation.mutate(!agent.isActive)}
+                    className={cn(
+                      "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                      agent.isActive ? "bg-emerald-500" : "bg-neutral-700",
+                      (!isAdmin || toggleMutation.isPending) && "opacity-50 cursor-not-allowed"
+                    )}
+                    title={isAdmin ? (agent.isActive ? "Deactivate agent" : "Activate agent") : "Only admins can change agent activation"}
+                  >
+                    <span
+                      className={cn(
+                        "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                        agent.isActive ? "translate-x-4" : "translate-x-0"
+                      )}
+                    />
+                  </button>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                      agent.isActive
+                        ? "bg-emerald-900/40 text-emerald-400"
+                        : "border border-border text-text-muted"
+                    )}
+                  >
+                    {agent.isActive ? "Active" : "Inactive"}
+                  </span>
+                </div>
+              )}
+            </div>
             {agent && (
               <div className="mt-1.5">
                 <AgentIdentityBadge agent={agent} />

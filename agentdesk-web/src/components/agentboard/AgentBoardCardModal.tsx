@@ -138,6 +138,15 @@ export function AgentBoardCardModal({ agentSlug, card, onClose, onSave }: Props)
               }
             />
           ) : null}
+
+          {card.cardType !== "drive_link" ? (
+            <div className="pt-4 border-t border-border/50">
+              <ReferenceLinksEditor
+                links={(config.referenceLinks as DriveLink[]) ?? []}
+                onChange={(referenceLinks) => setConfig({ ...config, referenceLinks })}
+              />
+            </div>
+          ) : null}
         </div>
 
         <div className="flex justify-end gap-2 border-t border-border p-4">
@@ -293,6 +302,77 @@ function DriveLinksEditor({
         >
           Add link
         </button>
+      </div>
+    </Field>
+  );
+}
+
+function ReferenceLinksEditor({
+  links,
+  onChange,
+}: {
+  links: DriveLink[];
+  onChange: (links: DriveLink[]) => void;
+}) {
+  const [label, setLabel] = useState("");
+  const [url, setUrl] = useState("");
+
+  return (
+    <Field label="Reference Links & Sources">
+      <div className="space-y-2">
+        {links.map((link) => (
+          <div
+            key={link.id}
+            className="flex items-center gap-2 rounded-xl border border-border bg-panel-elevated px-3 py-2 text-sm"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-medium text-text-strong">{link.label}</div>
+              <div className="truncate text-[11px] text-text-faint">{link.url}</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onChange(links.filter((l) => l.id !== link.id))}
+              className="text-text-faint hover:text-red-300"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3">
+        <div className="flex gap-2">
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="Label (e.g. Wiki docs)"
+            className="flex-1 rounded-xl border border-border bg-panel-elevated px-3 py-2 text-sm outline-none focus:border-neutral-500"
+          />
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://example.com/..."
+            className="flex-[2] rounded-xl border border-border bg-panel-elevated px-3 py-2 text-sm outline-none focus:border-neutral-500"
+          />
+          <button
+            type="button"
+            disabled={!label.trim() || !url.trim()}
+            onClick={() => {
+              let targetUrl = url.trim();
+              if (!/^https?:\/\//i.test(targetUrl)) {
+                targetUrl = "https://" + targetUrl;
+              }
+              onChange([
+                ...links,
+                { id: crypto.randomUUID(), label: label.trim(), url: targetUrl },
+              ]);
+              setLabel("");
+              setUrl("");
+            }}
+            className="rounded-xl border border-border px-3 py-2 text-sm hover:bg-panel-hover disabled:opacity-50 flex items-center justify-center shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </Field>
   );

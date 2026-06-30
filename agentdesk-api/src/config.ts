@@ -14,6 +14,8 @@ export const config = {
   webhookSecret: process.env.WEBHOOK_SECRET || "agentdesk-dev-secret",
   uploadDir: process.env.UPLOAD_DIR || "./uploads",
   openaiApiKey: process.env.OPENAI_API_KEY || "",
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
+  googleAiApiKey: process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY || "",
   useEmbeddedDb: process.env.USE_EMBEDDED_DB === "true",
   embeddedDbDir: process.env.EMBEDDED_DB_DIR || "./data/pglite",
   corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",

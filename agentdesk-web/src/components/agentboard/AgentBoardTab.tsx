@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   Bot,
+  Link2,
   Plus,
   Trash2,
   X,
@@ -288,6 +289,10 @@ function BoardCard({
   const color = cardTypeColor(card);
   const summary = cardSummary(card);
 
+  const links = (card.cardType === "drive_link"
+    ? (card.config.links as DriveLink[] | undefined)
+    : (card.config.referenceLinks as DriveLink[] | undefined)) ?? [];
+
   return (
     <div
       className={cn(
@@ -309,6 +314,28 @@ function BoardCard({
             <p className="mt-0.5 line-clamp-2 text-[11px] text-text-muted">{card.description}</p>
           )}
           {summary && <p className="mt-1.5 text-[10px] text-text-faint">{summary}</p>}
+
+          {links.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5 border-t border-white/5 pt-2">
+              {links.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-text-muted transition hover:bg-white/10 hover:text-text-strong",
+                    "max-w-full"
+                  )}
+                  title={`${link.label}: ${link.url}`}
+                >
+                  <Link2 className="h-2.5 w-2.5 shrink-0" />
+                  <span className="truncate">{link.label}</span>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
         <button
           type="button"

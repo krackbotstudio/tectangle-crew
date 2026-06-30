@@ -31,6 +31,7 @@ import { WorkItemModal, type WorkItemKind } from "../components/workspace/WorkIt
 import { WorkHubCanvas } from "../components/workhub/WorkHubCanvas";
 import { WorkHubTimeline } from "../components/workhub/WorkHubTimeline";
 import { WorkHubNodeSettings } from "../components/workhub/WorkHubNodeSettings";
+import { AddExistingProjectModal } from "../components/workhub/AddExistingProjectModal";
 import {
   parseNodeSelection,
   type WorkNodeData,
@@ -79,6 +80,7 @@ export function WorkHubPage() {
   const [nodeSelection, setNodeSelection] = useState<WorkNodeSelection | null>(null);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [modal, setModal] = useState<ModalState>(null);
+  const [addExistingOpen, setAddExistingOpen] = useState(false);
   const [nestState, setNestState] = useState<CanvasNestState>(() => loadCanvasNestState());
 
   const { data: hub, isLoading, refetch, isFetching } = useQuery({
@@ -311,7 +313,10 @@ export function WorkHubPage() {
                 <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
                 Refresh
               </button>
-              <CreateMenu onSelect={(kind) => openCreate(kind)} />
+              <CreateMenu
+                onSelect={(kind) => openCreate(kind)}
+                onAddExisting={() => setAddExistingOpen(true)}
+              />
             </div>
           }
         />
@@ -359,6 +364,7 @@ export function WorkHubPage() {
                 onDisconnectActivity={handleDetachActivity}
                 onDisconnectTask={handleDetachTask}
                 onCreateCard={openCreate}
+                onAddExistingProject={() => setAddExistingOpen(true)}
                 agents={agents}
                 onAgentChange={handleAgentChange}
                 onProjectAgentAdd={handleProjectAgentAdd}
@@ -613,6 +619,10 @@ export function WorkHubPage() {
         </div>
       )}
 
+      {addExistingOpen && (
+        <AddExistingProjectModal onClose={() => setAddExistingOpen(false)} onAdded={invalidate} />
+      )}
+
       {modal && (
         <WorkItemModal
           mode={modal.mode}
@@ -635,7 +645,13 @@ export function WorkHubPage() {
   );
 }
 
-function CreateMenu({ onSelect }: { onSelect: (kind: WorkItemKind) => void }) {
+function CreateMenu({
+  onSelect,
+  onAddExisting,
+}: {
+  onSelect: (kind: WorkItemKind) => void;
+  onAddExisting: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -651,10 +667,21 @@ function CreateMenu({ onSelect }: { onSelect: (kind: WorkItemKind) => void }) {
       {open && (
         <>
           <button type="button" className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-label="Close menu" />
-          <div className="absolute right-0 z-50 mt-2 w-44 rounded-xl border border-border bg-panel-elevated py-1 shadow-xl">
+          <div className="absolute right-0 z-50 mt-2 w-52 rounded-xl border border-border bg-panel-elevated py-1 shadow-xl">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onAddExisting();
+              }}
+              className="block w-full border-b border-border px-4 py-2.5 text-left text-sm text-text hover:bg-panel-hover"
+            >
+              <span className="font-medium">Existing project group</span>
+              <span className="mt-0.5 block text-[10px] text-text-faint">From Groups — add to canvas</span>
+            </button>
             {(
               [
-                ["project", "Project"],
+                ["project", "New project"],
                 ["activity", "Activity"],
                 ["task", "Standalone task"],
               ] as const

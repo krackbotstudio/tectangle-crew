@@ -1,6 +1,8 @@
 export const TOOL_CATEGORIES = [
-  { id: "design", label: "Design" },
-  { id: "productivity", label: "Productivity" },
+  { id: "social", label: "Social platforms" },
+  { id: "scheduling", label: "Scheduling & publishing" },
+  { id: "design", label: "Design & creatives" },
+  { id: "productivity", label: "Content & tracking" },
   { id: "communication", label: "Communication" },
   { id: "development", label: "Development" },
   { id: "storage", label: "Storage" },
@@ -9,26 +11,21 @@ export const TOOL_CATEGORIES = [
   { id: "other", label: "Other" },
 ] as const;
 
+/** Quick-pick tools shown in team configure (full catalog via API). */
 export const TOOL_CATALOG = [
-  { name: "Figma", category: "design" },
-  { name: "Canva", category: "design" },
-  { name: "Adobe Creative Cloud", category: "design" },
-  { name: "Google Docs", category: "productivity" },
-  { name: "Google Sheets", category: "productivity" },
-  { name: "Notion", category: "productivity" },
-  { name: "Slack", category: "communication" },
-  { name: "Microsoft Teams", category: "communication" },
-  { name: "Zoom", category: "communication" },
-  { name: "GitHub", category: "development" },
-  { name: "GitLab", category: "development" },
-  { name: "Jira", category: "development" },
-  { name: "Linear", category: "development" },
-  { name: "Google Drive", category: "storage" },
-  { name: "Dropbox", category: "storage" },
-  { name: "Google Analytics", category: "analytics" },
-  { name: "HubSpot", category: "analytics" },
-  { name: "OpenAI API", category: "ai" },
-  { name: "Zapier", category: "ai" },
+  { name: "Google Sheets", category: "productivity", slug: "google-sheets" },
+  { name: "Canva", category: "design", slug: "canva" },
+  { name: "Figma", category: "design", slug: "figma" },
+  { name: "Meta Business Suite", category: "social", slug: "meta-business" },
+  { name: "Instagram", category: "social", slug: "instagram" },
+  { name: "Facebook", category: "social", slug: "facebook" },
+  { name: "WhatsApp Business", category: "social", slug: "whatsapp-business" },
+  { name: "X (Twitter)", category: "social", slug: "x-twitter" },
+  { name: "LinkedIn", category: "social", slug: "linkedin" },
+  { name: "Buffer", category: "scheduling", slug: "buffer" },
+  { name: "Notion", category: "productivity", slug: "notion" },
+  { name: "Slack", category: "communication", slug: "slack" },
+  { name: "n8n", category: "ai", slug: "n8n" },
 ] as const;
 
 export const REQUEST_STATUS_META: Record<

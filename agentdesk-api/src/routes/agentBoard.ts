@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { query } from "../db.js";
 import { authRequired } from "../middleware/auth.js";
+import { routeParam } from "../utils/routeParam.js";
 
 const router = Router({ mergeParams: true });
 
@@ -197,7 +198,7 @@ async function syncRulesFromBoard(agentId: string) {
 }
 
 router.get("/", authRequired, async (req, res) => {
-  const agentId = await getAgentIdBySlug(req.params.slug);
+  const agentId = await getAgentIdBySlug(routeParam(req.params.slug));
   if (!agentId) {
     res.status(404).json({ error: "Agent not found" });
     return;
@@ -220,7 +221,7 @@ router.get("/", authRequired, async (req, res) => {
 });
 
 router.post("/cards", authRequired, async (req, res) => {
-  const agentId = await getAgentIdBySlug(req.params.slug);
+  const agentId = await getAgentIdBySlug(routeParam(req.params.slug));
   if (!agentId) {
     res.status(404).json({ error: "Agent not found" });
     return;
@@ -259,7 +260,7 @@ router.post("/cards", authRequired, async (req, res) => {
 });
 
 router.patch("/cards/:cardId", authRequired, async (req, res) => {
-  const agentId = await getAgentIdBySlug(req.params.slug);
+  const agentId = await getAgentIdBySlug(routeParam(req.params.slug));
   if (!agentId) {
     res.status(404).json({ error: "Agent not found" });
     return;
@@ -274,7 +275,7 @@ router.patch("/cards/:cardId", authRequired, async (req, res) => {
 
   const existing = await query<{ card_type: string }>(
     `SELECT card_type FROM agent_board_cards WHERE id = $1 AND agent_id = $2`,
-    [req.params.cardId, agentId]
+    [routeParam(req.params.cardId), agentId]
   );
   if (!existing.rows[0]) {
     res.status(404).json({ error: "Card not found" });
@@ -282,7 +283,7 @@ router.patch("/cards/:cardId", authRequired, async (req, res) => {
   }
 
   const sets: string[] = ["updated_at = NOW()"];
-  const params: unknown[] = [req.params.cardId, agentId];
+  const params: unknown[] = [routeParam(req.params.cardId), agentId];
   let n = 3;
 
   if (title !== undefined) {
@@ -316,7 +317,7 @@ router.patch("/cards/:cardId", authRequired, async (req, res) => {
 });
 
 router.delete("/cards/:cardId", authRequired, async (req, res) => {
-  const agentId = await getAgentIdBySlug(req.params.slug);
+  const agentId = await getAgentIdBySlug(routeParam(req.params.slug));
   if (!agentId) {
     res.status(404).json({ error: "Agent not found" });
     return;
@@ -324,7 +325,7 @@ router.delete("/cards/:cardId", authRequired, async (req, res) => {
 
   const deleted = await query(
     `DELETE FROM agent_board_cards WHERE id = $1 AND agent_id = $2 RETURNING id`,
-    [req.params.cardId, agentId]
+    [routeParam(req.params.cardId), agentId]
   );
 
   if (!deleted.rows[0]) {

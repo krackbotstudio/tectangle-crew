@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { LOGO_WORDMARK } from "../lib/brand";
 import { WorkspaceLayout } from "./WorkspaceLayout";
 
 export function ProtectedLayout() {
@@ -9,7 +10,7 @@ export function ProtectedLayout() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-canvas text-text-muted">
-        Loading Agent Desk…
+        Loading {LOGO_WORDMARK}…
       </div>
     );
   }

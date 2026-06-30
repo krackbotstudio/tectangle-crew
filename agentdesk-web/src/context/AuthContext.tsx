@@ -42,6 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, [hydrateSession]);
 
+  useEffect(() => {
+    const onSessionExpired = () => {
+      setToken(null);
+      setUser(null);
+    };
+    window.addEventListener("agentdesk:session-expired", onSessionExpired);
+    return () => window.removeEventListener("agentdesk:session-expired", onSessionExpired);
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const { token, user } = await api.login(email, password);
     setToken(token);

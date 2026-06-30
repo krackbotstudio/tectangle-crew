@@ -13,8 +13,10 @@ import {
   Pencil,
   Check,
   X,
+  Power,
 } from "lucide-react";
 import { api } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import { AutomationsPage } from "./AutomationsPage";
 import { KnowledgePage } from "./KnowledgePage";
 import { SettingsPage } from "./SettingsPage";
@@ -38,11 +40,25 @@ const tabs = [
 export function AgentManagePage() {
   const { agentSlug, tab } = useParams<{ agentSlug: string; tab?: string }>();
   const activeTab = tab ?? "board";
+  const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["agent", agentSlug],
     queryFn: () => api.getAgent(agentSlug!),
     enabled: !!agentSlug,
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (isActive: boolean) => api.updateAgent(agentSlug!, { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agent", agentSlug] });
+      queryClient.invalidateQueries({ queryKey: ["agents"] });
+      queryClient.invalidateQueries({ queryKey: ["team"] });
+    },
+    onError: (err: Error) => {
+      alert(err.message);
+    },
   });
 
   if (isLoading) {
@@ -64,20 +80,40 @@ export function AgentManagePage() {
         <div className="flex items-start gap-3 px-4 py-3 sm:px-6">
           <AgentAvatar name={agent.name} color={agent.avatarColor} />
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               <h1 className="truncate text-base font-semibold text-text-strong sm:text-lg">
                 {agent.name}
               </h1>
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
-                  agent.isActive
-                    ? "bg-emerald-900/40 text-emerald-400"
-                    : "border border-border text-text-muted"
-                )}
-              >
-                {agent.isActive ? "Active" : "Inactive"}
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!isAdmin || toggleMutation.isPending}
+                  onClick={() => toggleMutation.mutate(!agent.isActive)}
+                  className={cn(
+                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                    agent.isActive ? "bg-emerald-500" : "bg-neutral-700",
+                    (!isAdmin || toggleMutation.isPending) && "opacity-50 cursor-not-allowed"
+                  )}
+                  title={isAdmin ? (agent.isActive ? "Deactivate agent" : "Activate agent") : "Only admins can change agent activation"}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                      agent.isActive ? "translate-x-4" : "translate-x-0"
+                    )}
+                  />
+                </button>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase",
+                    agent.isActive
+                      ? "bg-emerald-900/40 text-emerald-400"
+                      : "border border-border text-text-muted"
+                  )}
+                >
+                  {agent.isActive ? "Active" : "Inactive"}
+                </span>
+              </div>
             </div>
             <div className="mt-1.5">
               <AgentIdentity agent={agent} compact />
@@ -137,6 +173,7 @@ export function AgentManagePage() {
 
 function AgentConfigureTab({ agentSlug }: { agentSlug: string }) {
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
 
@@ -149,7 +186,7 @@ function AgentConfigureTab({ agentSlug }: { agentSlug: string }) {
   if (!agent) return null;
 
   const saveMutation = useMutation({
-    mutationFn: (payload: { skills?: string[]; rules?: string[]; constraints?: string[]; name?: string }) =>
+    mutationFn: (payload: { skills?: string[]; rules?: string[]; constraints?: string[]; name?: string; isActive?: boolean }) =>
       api.updateAgent(agentSlug, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["agent", agentSlug] });
@@ -240,6 +277,20 @@ function AgentConfigureTab({ agentSlug }: { agentSlug: string }) {
               className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs hover:bg-panel-hover"
             >
               <Copy className="h-3.5 w-3.5" /> Clone agent
+            </button>
+            <button
+              type="button"
+              disabled={!isAdmin || saveMutation.isPending}
+              onClick={() => saveMutation.mutate({ isActive: !agent.isActive })}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs hover:bg-panel-hover transition-colors",
+                agent.isActive 
+                  ? "border-emerald-900/50 text-emerald-400 hover:bg-emerald-950/20" 
+                  : "border-border text-text-muted"
+              )}
+              title={isAdmin ? undefined : "Only admins can change agent activation"}
+            >
+              <Power className="h-3.5 w-3.5" /> {agent.isActive ? "Deactivate" : "Activate"}
             </button>
             {!agent.isTemplate && (
               <button

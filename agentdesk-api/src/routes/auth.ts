@@ -232,7 +232,7 @@ router.get("/google/callback", async (req, res) => {
 });
 
 router.get("/me", authRequired, (req, res) => {
-  res.json({ user: req.user });
+  res.json({ user: req.user! });
 });
 
 export default router;

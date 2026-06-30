@@ -2,6 +2,7 @@ import { NavLink, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MessageSquare, ListTodo, BookOpen, Settings, LayoutDashboard, Workflow } from "lucide-react";
 import { api } from "../lib/api";
+import { LOGO_WORDMARK, PRODUCT_TAGLINE } from "../lib/brand";
 import { AGENT_ICONS, cn } from "../lib/utils";
 
 const navItems = [
@@ -24,8 +25,8 @@ export function AgentSidebar() {
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
       <div className="border-b border-slate-200 px-4 py-5">
-        <div className="text-lg font-semibold text-brand-700">Agent Desk</div>
-        <div className="text-xs text-slate-500">Multi-agent automation</div>
+        <div className="text-lg font-semibold text-brand-700">{LOGO_WORDMARK}</div>
+        <div className="text-xs text-slate-500">{PRODUCT_TAGLINE}</div>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3">

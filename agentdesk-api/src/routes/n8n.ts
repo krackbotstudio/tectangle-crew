@@ -2,6 +2,7 @@ import { Router } from "express";
 import { query } from "../db.js";
 import { authRequired, adminRequired } from "../middleware/auth.js";
 import { config } from "../config.js";
+import { LOGO_WORDMARK } from "../brand.js";
 import {
   activateWorkflow,
   createWorkflow,
@@ -274,7 +275,7 @@ router.post("/agents/:slug/test-webhook", authRequired, adminRequired, async (re
     return;
   }
 
-  const testMessage = (req.body as { message?: string }).message ?? "Hello from Agent Desk — webhook test.";
+  const testMessage = (req.body as { message?: string }).message ?? `Hello from ${LOGO_WORDMARK} — webhook test.`;
 
   try {
     const response = await fetch(webhookUrl, {

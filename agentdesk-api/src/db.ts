@@ -5,6 +5,7 @@ import pg from "pg";
 import { PGlite } from "@electric-sql/pglite";
 import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 import { config } from "./config.js";
+import { LOGO_WORDMARK } from "./brand.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = path.resolve(__dirname, "../../database/migrations");
@@ -30,12 +31,12 @@ async function acquireEmbeddedLock(dataDir: string): Promise<void> {
     const pid = Number.parseInt(raw.trim(), 10);
     if (Number.isFinite(pid) && isProcessAlive(pid)) {
       throw new Error(
-        `Another Agent Desk API is already using the embedded database (PID ${pid}). Stop other "npm run dev" processes and try again.`
+        `Another ${LOGO_WORDMARK} API is already using the embedded database (PID ${pid}). Stop other "npm run dev" processes and try again.`
       );
     }
     await fs.unlink(embeddedLockPath).catch(() => undefined);
   } catch (err) {
-    if (err instanceof Error && err.message.includes("Another Agent Desk API")) {
+    if (err instanceof Error && err.message.includes(`Another ${LOGO_WORDMARK} API`)) {
       throw err;
     }
   }
@@ -109,9 +110,11 @@ export async function initDatabase(): Promise<void> {
     return;
   }
 
+  const isLocal = config.databaseUrl.includes("localhost") || config.databaseUrl.includes("127.0.0.1");
   const testPool = new pg.Pool({
     connectionString: config.databaseUrl,
     connectionTimeoutMillis: 3000,
+    ssl: isLocal ? undefined : { rejectUnauthorized: false }
   });
 
   try {

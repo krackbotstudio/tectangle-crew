@@ -1,15 +1,17 @@
 import { useEffect, useRef } from "react";
-import { FolderKanban, ListTodo, Plus, Zap } from "lucide-react";
+import { FolderKanban, FolderOpen, ListTodo, Plus, Zap } from "lucide-react";
 import type { WorkItemKind } from "../workspace/WorkItemModal";
 
 export function WorkCanvasContextMenu({
   position,
   onClose,
   onCreate,
+  onAddExisting,
 }: {
   position: { x: number; y: number };
   onClose: () => void;
   onCreate: (kind: WorkItemKind) => void;
+  onAddExisting: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -48,6 +50,20 @@ export function WorkCanvasContextMenu({
         <Plus className="mr-1.5 inline h-3.5 w-3.5" />
         Add to canvas
       </div>
+      <button
+        type="button"
+        onClick={() => {
+          onAddExisting();
+          onClose();
+        }}
+        className="flex w-full items-start gap-2.5 border-b border-border px-3 py-2.5 text-left hover:bg-panel-hover"
+      >
+        <FolderOpen className="mt-0.5 h-4 w-4 shrink-0 text-text-muted" />
+        <span>
+          <span className="block text-sm text-text-strong">Existing project group</span>
+          <span className="block text-[10px] text-text-faint">From Groups</span>
+        </span>
+      </button>
       {items.map(({ kind, label, icon: Icon, desc }) => (
         <button
           key={kind}

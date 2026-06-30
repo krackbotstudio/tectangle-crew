@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate, Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Copy, Trash2, MoreVertical, Users, FolderKanban, Settings2 } from "lucide-react";
-import { api, type Agent } from "../../lib/api";
+import { api, type Agent, type ProjectGroupAgentSummary } from "../../lib/api";
 import { cn } from "../../lib/utils";
 import { AgentAvatar } from "./TagEditor";
 import { AgentIdentityBadge } from "./AgentIdentity";
@@ -177,6 +177,7 @@ export function ContextPanel({ mode = "inline" }: { mode?: "inline" | "overlay" 
 
   if (isProjects) {
     const projectId = location.pathname.match(/\/projects\/([^/]+)/)?.[1];
+    const activeAgentSlug = location.pathname.match(/\/projects\/[^/]+\/agents\/([^/]+)/)?.[1];
     const isCreatePage = projectId === "new";
     return (
       <aside className={panelClass}>
@@ -207,7 +208,13 @@ export function ContextPanel({ mode = "inline" }: { mode?: "inline" | "overlay" 
             </div>
           )}
           {(projectsData?.projects ?? []).map((p) => (
-            <ProjectListItem key={p.id} project={p} active={projectId === p.id} onNavigate={closeIfMobile} />
+            <ProjectListItem
+              key={p.id}
+              project={p}
+              active={projectId === p.id}
+              activeAgentSlug={projectId === p.id ? activeAgentSlug : undefined}
+              onNavigate={closeIfMobile}
+            />
           ))}
           {(projectsData?.projects ?? []).length === 0 && !isCreatePage && (
             <div className="flex flex-col items-center gap-3 px-4 py-6">
@@ -236,15 +243,25 @@ export function ContextPanel({ mode = "inline" }: { mode?: "inline" | "overlay" 
 function ProjectListItem({
   project,
   active,
+  activeAgentSlug,
   onNavigate,
 }: {
-  project: { id: string; title: string; agentCount: number; status: string; workProjectId?: string | null };
+  project: {
+    id: string;
+    title: string;
+    agentCount: number;
+    status: string;
+    workProjectId?: string | null;
+    agents?: ProjectGroupAgentSummary[];
+  };
   active: boolean;
+  activeAgentSlug?: string;
   onNavigate?: () => void;
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const agents = project.agents ?? [];
 
   async function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
@@ -257,20 +274,49 @@ function ProjectListItem({
   }
 
   return (
-    <div className="group relative mb-0.5">
+    <div
+      className={cn(
+        "group relative mb-1 rounded-xl transition",
+        active ? "bg-panel-elevated ring-1 ring-border" : "hover:bg-panel-hover"
+      )}
+    >
       <NavLink
         to={`/projects/${project.id}`}
         onClick={onNavigate}
-        className={cn(
-          listItemNavClass(active, "block px-3 py-2.5 pr-8 transition"),
-        )}
+        className="block px-3 py-2.5 pr-8"
       >
-        <div className="text-sm font-medium">{project.title}</div>
-        <div className="text-xs text-neutral-500">
-          {project.agentCount} agent{project.agentCount !== 1 ? "s" : ""}
-          {project.workProjectId ? " · Work project" : ""}
-        </div>
+        <div className="text-sm font-medium leading-snug text-text-strong">{project.title}</div>
+        {project.workProjectId && (
+          <div className="mt-0.5 text-[10px] text-text-faint">Linked work project</div>
+        )}
       </NavLink>
+
+      {agents.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-1.5 px-3 pb-2.5">
+          {agents.map((agent) => {
+            const isAgentActive = active && activeAgentSlug === agent.slug;
+            return (
+              <Link
+                key={agent.slug}
+                to={`/projects/${project.id}/agents/${agent.slug}`}
+                onClick={onNavigate}
+                title={agent.name}
+                className={cn(
+                  "rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  isAgentActive
+                    ? "ring-2 ring-accent ring-offset-2 ring-offset-panel"
+                    : "ring-2 ring-transparent hover:ring-border"
+                )}
+              >
+                <AgentAvatar name={agent.name} color={agent.avatarColor ?? undefined} size="sm" />
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="px-3 pb-2.5 text-[11px] text-text-faint">No agents yet</div>
+      )}
+
       <button
         type="button"
         onClick={() => setMenuOpen(!menuOpen)}

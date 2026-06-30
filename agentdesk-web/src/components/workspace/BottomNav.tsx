@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, Users, Bot, FolderKanban, ClipboardList, LogOut } from "lucide-react";
+import { Home, Users, Bot, FolderKanban, ClipboardList, Store, LogOut } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../context/AuthContext";
 
@@ -9,6 +9,7 @@ const items = [
   { to: "/agents", icon: Bot, label: "Agents" },
   { to: "/projects", icon: FolderKanban, label: "Groups" },
   { to: "/work", icon: ClipboardList, label: "Work" },
+  { to: "/app-store", icon: Store, label: "App Store" },
 ];
 
 export function BottomNav() {

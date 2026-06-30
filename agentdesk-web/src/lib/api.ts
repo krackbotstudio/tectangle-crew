@@ -1,3 +1,61 @@
+export type BuiltinAiProviderId = "anthropic" | "openai" | "google";
+export type AiProviderRef = "auto" | BuiltinAiProviderId | string;
+
+export interface AiCustomProvider {
+  id: string;
+  ref: string;
+  name: string;
+  kind: "openai_compatible";
+  baseUrl: string;
+  enabled: boolean;
+  configured: boolean;
+  apiKeyHint: string | null;
+  defaultModel: string;
+  discoveredModels: string[];
+}
+
+export interface AiSettingsResponse {
+  defaultProvider: AiProviderRef;
+  defaultModel: string;
+  autoAvailable: boolean;
+  configuredProviders: string[];
+  providers: Record<
+    BuiltinAiProviderId,
+    {
+      enabled: boolean;
+      configured: boolean;
+      apiKeyHint: string | null;
+      defaultModel: string;
+    }
+  >;
+  customProviders: AiCustomProvider[];
+  catalog: Record<BuiltinAiProviderId, { label: string; models: { id: string; label: string }[] }>;
+  providerTemplates: Array<{ name: string; baseUrl: string; defaultModel: string }>;
+}
+
+export interface UpdateAiSettingsPayload {
+  defaultProvider?: AiProviderRef;
+  defaultModel?: string;
+  providers?: {
+    anthropic?: { enabled?: boolean; apiKey?: string | null; defaultModel?: string };
+    openai?: { enabled?: boolean; apiKey?: string | null; defaultModel?: string };
+    google?: { enabled?: boolean; apiKey?: string | null; defaultModel?: string };
+  };
+  customProviders?: Array<{
+    id?: string;
+    name?: string;
+    baseUrl?: string;
+    enabled?: boolean;
+    apiKey?: string | null;
+    clearApiKey?: boolean;
+    defaultModel?: string;
+  }>;
+  removeCustomProviderIds?: string[];
+}
+
+/** @deprecated use AiProviderRef */
+export type AiProviderId = BuiltinAiProviderId;
+
 export interface User {
   id: string;
   email: string;
@@ -52,6 +110,128 @@ export interface TeamToolRequest {
   updatedAt: string;
 }
 
+export type ProjectToolStatus = "planned" | "requested" | "approved" | "connected" | "disabled";
+
+export interface ProjectTool {
+  id: string;
+  projectId: string;
+  toolSlug: string;
+  toolName: string;
+  category: string;
+  capabilities: string[];
+  status: ProjectToolStatus;
+  projectStatus?: ProjectToolStatus;
+  notes: string | null;
+  description: string | null;
+  connectVia: string | null;
+  workspaceStatus?: IntegrationStatus | "not_configured";
+  accountLabel?: string | null;
+  connectionType?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ToolCatalogResponse {
+  categories: { id: string; label: string }[];
+  tools: Array<{
+    slug: string;
+    name: string;
+    category: string;
+    description: string;
+    capabilities: string[];
+    connectVia?: string;
+  }>;
+  stacks: Array<{
+    id: string;
+    name: string;
+    description: string;
+    toolSlugs: string[];
+  }>;
+}
+
+export type IntegrationConnectionType = "oauth" | "api_key" | "mcp" | "n8n" | "manual";
+export type IntegrationStatus = "not_configured" | "configured" | "connected" | "error" | "disabled";
+export type McpTransport = "stdio" | "sse" | "http";
+
+export interface IntegrationCredentialsMasked {
+  apiKey: string | null;
+  apiSecret: string | null;
+  anonKey: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  clientId: string | null;
+  clientSecret: string | null;
+  webhookSecret: string | null;
+}
+
+export interface WorkspaceIntegration {
+  id: string;
+  toolSlug: string;
+  toolName: string;
+  category: string;
+  connectionType: IntegrationConnectionType;
+  status: IntegrationStatus;
+  accountLabel: string | null;
+  config: Record<string, unknown>;
+  credentials: IntegrationCredentialsMasked;
+  hasCredentials: boolean;
+  notes: string | null;
+  description: string | null;
+  capabilities: string[];
+  connectVia: string | null;
+  lastTestedAt: string | null;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConsoleLibraryItem {
+  slug: string;
+  name: string;
+  category: string;
+  description: string;
+  capabilities: string[];
+  connectVia?: string;
+  liveIntegration?: boolean;
+  setupHint?: string;
+  integration: WorkspaceIntegration | null;
+}
+
+export interface McpConnector {
+  id: string;
+  name: string;
+  description: string | null;
+  transport: McpTransport;
+  serverUrl: string | null;
+  command: string | null;
+  args: string[];
+  envKeys: string[];
+  credentials: IntegrationCredentialsMasked;
+  hasCredentials: boolean;
+  status: IntegrationStatus;
+  notes: string | null;
+  lastTestedAt: string | null;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConsoleResponse {
+  catalog: {
+    categories: { id: string; label: string }[];
+    stacks: ToolCatalogResponse["stacks"];
+  };
+  library: ConsoleLibraryItem[];
+  integrations: WorkspaceIntegration[];
+  mcpConnectors: McpConnector[];
+  stats: {
+    catalogCount: number;
+    configuredCount: number;
+    connectedCount: number;
+    mcpCount: number;
+  };
+}
+
 export interface Agent {
   id: string;
   slug: string;
@@ -73,11 +253,20 @@ export interface Agent {
   avatarColor: string;
   isTemplate?: boolean;
   isClone?: boolean;
+  isProjectAgent?: boolean;
   parentAgentName?: string | null;
   shortId?: string;
   projectGroups?: { id: string; title: string }[];
   projectGroupCount?: number;
   teamGroup?: { slug: string; name: string; color: string } | null;
+  chatMode?: "direct" | "n8n";
+  llmProvider?: string | null;
+  llmModel?: string | null;
+  llmTemperature?: number;
+  templateVisibility?: "public" | "private";
+  createdById?: string | null;
+  creatorName?: string | null;
+  isOwner?: boolean;
 }
 
 export type AgentBoardColumnSide = "input" | "output";
@@ -95,6 +284,12 @@ export type AgentBoardCard = {
   updatedAt: string;
 };
 
+export interface ProjectGroupAgentSummary {
+  slug: string;
+  name: string;
+  avatarColor?: string | null;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -104,6 +299,7 @@ export interface Project {
   createdAt: string;
   agentCount: number;
   workProjectId?: string | null;
+  agents?: ProjectGroupAgentSummary[];
 }
 
 export interface ProjectAgent {
@@ -120,7 +316,9 @@ export interface ProjectAgent {
   shortId?: string;
   isTemplate?: boolean;
   isClone?: boolean;
+  isProjectAgent?: boolean;
   parentAgentName?: string | null;
+  templateAgentId?: string | null;
   otherProjectCount?: number;
   teamGroup: { slug: string; name: string; color: string } | null;
 }
@@ -216,11 +414,87 @@ export interface WorkHub {
   allTasks: WorkTask[];
 }
 
+export interface SocialAccount {
+  id: string;
+  platform: string;
+  handle: string;
+  displayName: string | null;
+  profileUrl: string | null;
+  integrationSlug: string | null;
+  config: Record<string, unknown>;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SocialAccountInput = {
+  handle?: string;
+  displayName?: string;
+  profileUrl?: string;
+  integrationSlug?: string;
+  config?: Record<string, unknown>;
+  isActive?: boolean;
+};
+
+export interface SocialPost {
+  id: string;
+  projectId: string | null;
+  agentId: string | null;
+  socialAccountId: string | null;
+  creativeId: string | null;
+  platform: string;
+  content: string;
+  status: string;
+  scheduledAt: string | null;
+  publishedAt: string | null;
+  externalPostId: string | null;
+  errorDetail: string | null;
+  handle: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentCreative {
+  id: string;
+  projectId: string | null;
+  agentId: string;
+  messageId: string | null;
+  prompt: string;
+  purpose: string | null;
+  width: number | null;
+  height: number | null;
+  fileName: string;
+  mimeType: string;
+  provider: string | null;
+  status: "generated" | "scheduled" | "published" | "failed";
+  publishPlatform: string | null;
+  scheduledAt: string | null;
+  publishedAt: string | null;
+  downloadUrl: string;
+  createdAt: string;
+}
+
+export interface AgentQuestion {
+  id: string;
+  label: string;
+  type: "text" | "single" | "multi";
+  placeholder?: string;
+  options?: string[];
+  required?: boolean;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   createdAt: string;
+  agentId?: string;
+  agentName?: string;
+  avatarColor?: string;
+  metadata?: Record<string, unknown>;
+  creatives?: AgentCreative[];
+  questions?: AgentQuestion[];
 }
 
 export interface KnowledgeDocument {
@@ -299,6 +573,16 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
       (res.status === 503
         ? "Server unavailable — restart the API (npm run dev) so the database can initialize."
         : `Request failed (${res.status})`);
+
+    if (
+      res.status === 401 &&
+      !path.startsWith("/auth/login") &&
+      !path.startsWith("/auth/register")
+    ) {
+      setToken(null);
+      window.dispatchEvent(new CustomEvent("agentdesk:session-expired"));
+    }
+
     throw new Error(message);
   }
 
@@ -397,6 +681,28 @@ export const api = {
       `/agents${teamGroupId ? `?teamGroupId=${teamGroupId}` : ""}`
     ),
 
+  getAgentTemplates: (mineOnly?: boolean) =>
+    apiFetch<{ agents: Agent[] }>(
+      `/agents?templatesOnly=true${mineOnly ? "&mineOnly=true" : ""}`
+    ),
+
+  createAgentTemplate: (data: {
+    name: string;
+    description?: string;
+    teamGroupId?: string;
+    skills?: string[];
+    rules?: string[];
+    constraints?: string[];
+    systemPrompt?: string;
+    templateVisibility?: "public" | "private";
+    avatarColor?: string;
+    sourceSlug?: string;
+  }) =>
+    apiFetch<{ agent: Agent }>("/agents/templates", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   getAgent: (slug: string) => apiFetch<{ agent: Agent }>(`/agents/${slug}`),
 
   getAgentBoard: (slug: string) =>
@@ -466,7 +772,7 @@ export const api = {
     projectId: string,
     data: { agentId: string; role?: string; skills?: string[]; rules?: string[]; constraints?: string[] }
   ) =>
-    apiFetch<{ added: boolean }>(`/projects/${projectId}/agents`, {
+    apiFetch<{ added: boolean; agentId: string; slug: string; name: string }>(`/projects/${projectId}/agents`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
@@ -495,6 +801,120 @@ export const api = {
   deleteProject: (projectId: string) =>
     apiFetch<{ deleted: boolean }>(`/projects/${projectId}`, { method: "DELETE" }),
 
+  getAiProjectSetup: (description: string) =>
+    apiFetch<{
+      title: string;
+      goal: string;
+      description: string;
+      agents: {
+        agentId: string;
+        role: string;
+        skills: string[];
+        rules: string[];
+      }[];
+    }>("/projects/ai-setup", {
+      method: "POST",
+      body: JSON.stringify({ description }),
+    }),
+
+  getToolCatalog: () => apiFetch<ToolCatalogResponse>("/tools/catalog"),
+
+  getProjectTools: (projectId: string) =>
+    apiFetch<{ tools: ProjectTool[] }>(`/projects/${projectId}/tools`),
+
+  addProjectTool: (projectId: string, data: { toolSlug: string; notes?: string; status?: ProjectToolStatus }) =>
+    apiFetch<{ tool: ProjectTool }>(`/projects/${projectId}/tools`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  applyProjectToolStack: (projectId: string, stackId: string) =>
+    apiFetch<{ tools: ProjectTool[] }>(`/projects/${projectId}/tools`, {
+      method: "POST",
+      body: JSON.stringify({ stackId }),
+    }),
+
+  updateProjectTool: (
+    projectId: string,
+    toolId: string,
+    data: { status?: ProjectToolStatus; notes?: string | null }
+  ) =>
+    apiFetch<{ tool: ProjectTool }>(`/projects/${projectId}/tools/${toolId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  removeProjectTool: (projectId: string, toolId: string) =>
+    apiFetch<{ deleted: boolean }>(`/projects/${projectId}/tools/${toolId}`, {
+      method: "DELETE",
+    }),
+
+  getConsole: () => apiFetch<ConsoleResponse>("/console"),
+
+  upsertWorkspaceIntegration: (
+    toolSlug: string,
+    data: {
+      connectionType?: IntegrationConnectionType;
+      status?: IntegrationStatus;
+      accountLabel?: string | null;
+      config?: Record<string, unknown>;
+      credentials?: Partial<Record<keyof IntegrationCredentialsMasked, string>>;
+      notes?: string | null;
+    }
+  ) =>
+    apiFetch<{ integration: WorkspaceIntegration }>(`/console/integrations/${toolSlug}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  deleteWorkspaceIntegration: (toolSlug: string) =>
+    apiFetch<{ deleted: boolean }>(`/console/integrations/${toolSlug}`, { method: "DELETE" }),
+
+  testWorkspaceIntegration: (toolSlug: string) =>
+    apiFetch<{ ok: boolean; message?: string }>(`/console/integrations/${toolSlug}/test`, {
+      method: "POST",
+    }),
+
+  createMcpConnector: (data: {
+    name: string;
+    description?: string;
+    transport?: McpTransport;
+    serverUrl?: string;
+    command?: string;
+    args?: string[];
+    envKeys?: string[];
+    credentials?: Partial<Record<keyof IntegrationCredentialsMasked, string>>;
+    status?: IntegrationStatus;
+    notes?: string;
+  }) =>
+    apiFetch<{ connector: McpConnector }>("/console/mcp-connectors", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateMcpConnector: (
+    id: string,
+    data: Partial<{
+      name: string;
+      description: string | null;
+      transport: McpTransport;
+      serverUrl: string | null;
+      command: string | null;
+      args: string[];
+      envKeys: string[];
+      credentials: Partial<Record<keyof IntegrationCredentialsMasked, string>>;
+      status: IntegrationStatus;
+      notes: string | null;
+    }>
+  ) =>
+    apiFetch<{ connector: McpConnector }>(`/console/mcp-connectors/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteMcpConnector: (id: string) =>
+    apiFetch<{ deleted: boolean }>(`/console/mcp-connectors/${id}`, { method: "DELETE" }),
+
   getTasks: (slug: string, status?: string) =>
     apiFetch<{ tasks: Task[] }>(
       `/tasks/agent/${slug}${status ? `?status=${status}` : ""}`
@@ -511,6 +931,12 @@ export const api = {
     startDate?: string | null;
     dueDate?: string | null;
   }) => apiFetch<{ project: WorkProject }>("/work/projects", { method: "POST", body: JSON.stringify(data) }),
+
+  addWorkProjectFromGroup: (projectGroupId: string) =>
+    apiFetch<{ project: WorkProject }>("/work/projects/from-group", {
+      method: "POST",
+      body: JSON.stringify({ projectGroupId }),
+    }),
 
   updateWorkProject: (
     id: string,
@@ -616,14 +1042,86 @@ export const api = {
       body: JSON.stringify(data ?? {}),
     }),
 
-  getMessages: (slug: string) =>
-    apiFetch<{ messages: ChatMessage[] }>(`/chat/${slug}/messages`),
+  getMessages: (slug: string, projectId?: string) =>
+    apiFetch<{ messages: ChatMessage[] }>(
+      `/chat/${slug}/messages${projectId ? `?projectId=${projectId}` : ""}`
+    ),
 
-  sendMessage: (slug: string, message: string) =>
+  sendMessage: (slug: string, message: string, projectId?: string) =>
     apiFetch<{ reply: string; source: string; taskId?: string }>(
       `/chat/${slug}/send`,
-      { method: "POST", body: JSON.stringify({ message }) }
+      { method: "POST", body: JSON.stringify({ message, projectId }) }
     ),
+
+  getCreativePublishPlatforms: (creativeId: string) =>
+    apiFetch<{ platforms: { id: string; label: string }[] }>(
+      `/creatives/${creativeId}/publish-platforms`
+    ),
+
+  publishCreative: (creativeId: string, platform: string, notes?: string) =>
+    apiFetch<{ creative: AgentCreative; message: string }>(`/creatives/${creativeId}/publish`, {
+      method: "POST",
+      body: JSON.stringify({ platform, notes }),
+    }),
+
+  scheduleCreative: (creativeId: string, platform: string, scheduledAt: string, notes?: string) =>
+    apiFetch<{ creative: AgentCreative; message: string }>(`/creatives/${creativeId}/schedule`, {
+      method: "POST",
+      body: JSON.stringify({ platform, scheduledAt, notes }),
+    }),
+
+  getSocialPlatforms: () =>
+    apiFetch<{
+      platforms: { id: string; label: string; integrationSlugs: string[]; workspaceConnected: boolean }[];
+    }>("/social/platforms"),
+
+  getSocialAccounts: () => apiFetch<{ accounts: SocialAccount[] }>("/social/accounts"),
+
+  createSocialAccount: (data: {
+    platform: string;
+    handle: string;
+    displayName?: string;
+    profileUrl?: string;
+    integrationSlug?: string;
+    config?: Record<string, unknown>;
+  }) =>
+    apiFetch<{ account: SocialAccount }>("/social/accounts", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateSocialAccount: (id: string, data: Partial<SocialAccountInput>) =>
+    apiFetch<{ account: SocialAccount }>(`/social/accounts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteSocialAccount: (id: string) =>
+    apiFetch<{ deleted: boolean }>(`/social/accounts/${id}`, { method: "DELETE" }),
+
+  getSocialPosts: (projectId?: string) =>
+    apiFetch<{ posts: SocialPost[] }>(
+      `/social/posts${projectId ? `?projectId=${projectId}` : ""}`
+    ),
+
+  createSocialPost: (data: {
+    platform: string;
+    content: string;
+    projectId?: string;
+    scheduledAt?: string;
+    publishNow?: boolean;
+    handle?: string;
+    socialAccountId?: string;
+  }) =>
+    apiFetch<{ post: SocialPost; message: string }>("/social/posts", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  publishSocialPost: (postId: string) =>
+    apiFetch<{ post: SocialPost; message: string }>(`/social/posts/${postId}/publish`, {
+      method: "POST",
+    }),
 
   getDocuments: (slug: string) =>
     apiFetch<{ documents: KnowledgeDocument[] }>(`/knowledge/agent/${slug}`),
@@ -677,4 +1175,21 @@ export const api = {
       `/n8n/agents/${slug}/test-webhook`,
       { method: "POST", body: JSON.stringify({ message }) }
     ),
+
+  getAiSettings: () => apiFetch<AiSettingsResponse>("/settings/ai"),
+
+  updateAiSettings: (data: UpdateAiSettingsPayload) =>
+    apiFetch<AiSettingsResponse>("/settings/ai", { method: "PATCH", body: JSON.stringify(data) }),
+
+  testAiConnection: (data: { provider: string; model?: string; apiKey?: string }) =>
+    apiFetch<{ ok: boolean; reply?: string; provider?: string; model?: string; error?: string }>(
+      "/settings/ai/test",
+      { method: "POST", body: JSON.stringify(data) }
+    ),
+
+  discoverAiModels: (data: { provider: string; apiKey?: string }) =>
+    apiFetch<{ models: string[]; settings: AiSettingsResponse }>("/settings/ai/discover-models", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };

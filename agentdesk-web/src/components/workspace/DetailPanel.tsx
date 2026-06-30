@@ -126,7 +126,8 @@ export function DetailPanel({ mode = "inline" }: { mode?: "inline" | "overlay" }
     name: projectAgent!.name,
     slug: projectAgent!.slug,
     shortId: projectAgent!.shortId,
-    isTemplate: projectAgent!.isTemplate,
+    isTemplate: false,
+    isProjectAgent: true,
     isClone: projectAgent!.isClone,
     parentAgentName: projectAgent!.parentAgentName,
     team: projectAgent!.team,
@@ -182,7 +183,20 @@ export function DetailPanel({ mode = "inline" }: { mode?: "inline" | "overlay" }
               </div>
             )}
             <div className="mt-1">
-              <AgentIdentity agent={identityAgent} showProjects={!isProjectView} />
+              <AgentIdentity
+                agent={
+                  isProjectView
+                    ? {
+                        ...(agent ?? identityAgent),
+                        isTemplate: false,
+                        isProjectAgent: true,
+                        isClone: projectAgent?.isClone ?? agent?.isClone,
+                        parentAgentName: projectAgent?.parentAgentName ?? agent?.parentAgentName,
+                      }
+                    : (agent ?? identityAgent)
+                }
+                showProjects={!isProjectView}
+              />
             </div>
           </div>
         </div>
@@ -235,8 +249,14 @@ export function DetailPanel({ mode = "inline" }: { mode?: "inline" | "overlay" }
       <div className="flex-1 space-y-5 overflow-y-auto p-4">
         {isProjectView && (
           <div className="rounded-xl border border-border bg-panel-elevated px-3 py-2 text-xs text-text-muted">
-            Project-specific config for <strong className="text-text-strong">{projectData?.project.title}</strong>.
-            The same agent can have different settings in other project groups.
+            Project agent for <strong className="text-text-strong">{projectData?.project.title}</strong>.
+            {projectAgent?.parentAgentName && (
+              <>
+                {" "}
+                Based on the <strong className="text-text-strong">{projectAgent.parentAgentName}</strong> template —
+                skills, rules, and constraints here apply only to this group.
+              </>
+            )}
           </div>
         )}
 

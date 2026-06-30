@@ -10,6 +10,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { LOGO_WORDMARK, PRODUCT_NAME } from "../lib/brand";
 
 const navLinks = [
   { label: "Home", href: "#home" },
@@ -92,9 +93,9 @@ export function LandingPage() {
         <header className="relative z-20 w-full px-6 pt-6 lg:px-12 xl:px-16">
           <div className="flex w-full items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5">
-              <img src="/favicon.svg" alt="Agent Desk" className="h-9 w-9 rounded-lg" />
+              <img src="/favicon.svg" alt={PRODUCT_NAME} className="h-9 w-9 rounded-lg" />
               <span className="hidden text-sm font-semibold tracking-wide text-white/90 sm:inline">
-                Agent Desk
+                {LOGO_WORDMARK}
               </span>
             </Link>
 
@@ -220,12 +221,12 @@ export function LandingPage() {
           <div>
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-purple">About</p>
             <h2 className="mt-3 text-2xl font-bold uppercase tracking-tight text-white sm:text-3xl">
-              Your multi-agent command center
+              Your team workspace for AI agents
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-white/45">
-              Agent Desk gives every team a dedicated AI agent powered by n8n automations.
-              Chat on demand, run scheduled jobs, manage knowledge bases, and orchestrate
-              cross-team projects — all without writing code.
+              {LOGO_WORDMARK} brings every team together in one place — like Microsoft Teams, but
+              with dedicated AI agents for Content, Design, Marketing, Sales, HR, and more. Chat,
+              automate with n8n, manage knowledge, and run cross-team projects without writing code.
             </p>
             <Link
               to="/signup"
@@ -275,7 +276,7 @@ export function LandingPage() {
       </section>
 
       <footer className="border-t border-white/5 px-4 py-8 text-center text-[10px] uppercase tracking-[0.2em] text-white/30 sm:px-6">
-        © {new Date().getFullYear()} Agent Desk
+        © {new Date().getFullYear()} {LOGO_WORDMARK}
       </footer>
     </div>
   );

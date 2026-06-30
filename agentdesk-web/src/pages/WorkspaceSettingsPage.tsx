@@ -10,13 +10,15 @@ import {
   Trash2,
   Pencil,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import { api, type User, type WorkspaceUser } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { DashboardCard, PageHeader } from "../components/workspace/DashboardUI";
+import { AiModelsSection } from "../components/settings/AiModelsSection";
 import { cn } from "../lib/utils";
 
-type SettingsTab = "members" | "teams" | "account";
+type SettingsTab = "members" | "teams" | "ai" | "account";
 
 const roleLabels: Record<User["role"], string> = {
   admin: "Admin",
@@ -31,6 +33,7 @@ export function WorkspaceSettingsPage() {
   const tabs: { id: SettingsTab; label: string; icon: typeof Users; adminOnly?: boolean }[] = [
     { id: "members", label: "Members", icon: Users, adminOnly: true },
     { id: "teams", label: "Team groups", icon: Shield, adminOnly: true },
+    { id: "ai", label: "AI models", icon: Sparkles, adminOnly: true },
     { id: "account", label: "My account", icon: KeyRound },
   ];
 
@@ -65,6 +68,7 @@ export function WorkspaceSettingsPage() {
 
         {tab === "members" && isAdmin && <MembersSection />}
         {tab === "teams" && isAdmin && <TeamGroupsSection />}
+        {tab === "ai" && isAdmin && <AiModelsSection />}
         {tab === "account" && user && <MyAccountSection user={user} />}
       </div>
     </div>

@@ -19,6 +19,7 @@ import { api, type N8nWorkflowItem } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { DashboardCard } from "../components/workspace/DashboardUI";
 import { cn } from "../lib/utils";
+import { LOGO_WORDMARK } from "../lib/brand";
 
 export function AutomationsPage({
   embedded,
@@ -31,7 +32,7 @@ export function AutomationsPage({
   const slug = slugProp ?? routeSlug ?? agentId!;
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const [testMessage, setTestMessage] = useState("Hello — webhook test from Agent Desk.");
+  const [testMessage, setTestMessage] = useState(`Hello — webhook test from ${LOGO_WORDMARK}.`);
   const [actionError, setActionError] = useState("");
 
   const { data: agentData } = useQuery({
@@ -109,7 +110,7 @@ export function AutomationsPage({
               <h1 className="text-xl font-semibold text-text-strong">
                 {agent?.name ?? slug} — Automations
               </h1>
-              <p className="text-sm text-text-muted">Create and control n8n workflows from Agent Desk</p>
+              <p className="text-sm text-text-muted">Create and control n8n workflows from {LOGO_WORDMARK}</p>
             </div>
           </div>
           <AgentTabs />

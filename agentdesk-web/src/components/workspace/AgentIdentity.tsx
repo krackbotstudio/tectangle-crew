@@ -10,6 +10,7 @@ interface AgentIdentityProps {
     | "shortId"
     | "isTemplate"
     | "isClone"
+    | "isProjectAgent"
     | "parentAgentName"
     | "team"
     | "teamGroup"
@@ -23,21 +24,56 @@ interface AgentIdentityProps {
 export function AgentIdentityBadge({
   agent,
 }: {
-  agent: { isTemplate?: boolean; isClone?: boolean; parentAgentName?: string | null; shortId?: string };
+  agent: {
+    isTemplate?: boolean;
+    isClone?: boolean;
+    isProjectAgent?: boolean;
+    parentAgentName?: string | null;
+    templateVisibility?: "public" | "private";
+    createdById?: string | null;
+    creatorName?: string | null;
+    isOwner?: boolean;
+    shortId?: string;
+  };
 }) {
   return (
     <div className="flex flex-wrap gap-1">
-      {agent.isTemplate && (
+      {agent.isProjectAgent && (
+        <span className="rounded border border-accent/40 bg-accent-light px-1.5 py-0.5 text-[10px] font-semibold uppercase text-accent-fg">
+          Project agent
+        </span>
+      )}
+      {agent.isProjectAgent && agent.parentAgentName && (
+        <span className="rounded border border-neutral-600 bg-neutral-800 px-1.5 py-0.5 text-[10px] font-medium text-neutral-200">
+          From {agent.parentAgentName}
+        </span>
+      )}
+      {!agent.isProjectAgent && agent.isTemplate && (
         <span className="rounded border border-neutral-600 bg-neutral-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-neutral-300">
           Template
         </span>
       )}
-      {agent.isClone && (
-        <span className="rounded border border-neutral-600 bg-neutral-800 px-1.5 py-0.5 text-[10px] font-medium text-neutral-200">
-          Clone{agent.parentAgentName ? ` · ${agent.parentAgentName}` : ""}
+      {agent.isTemplate && agent.templateVisibility === "private" && (
+        <span className="rounded border border-amber-700/50 bg-amber-900/30 px-1.5 py-0.5 text-[10px] font-medium text-amber-200">
+          Private
         </span>
       )}
-      {!agent.isTemplate && !agent.isClone && (
+      {agent.isTemplate && agent.templateVisibility === "public" && agent.createdById && (
+        <span className="rounded border border-emerald-700/50 bg-emerald-900/30 px-1.5 py-0.5 text-[10px] font-medium text-emerald-200">
+          Public
+        </span>
+      )}
+      {!agent.isProjectAgent && agent.isTemplate && !agent.createdById && (
+        <span className="rounded border border-neutral-600 bg-neutral-800/80 px-1.5 py-0.5 text-[10px] font-medium text-neutral-400">
+          Built-in
+        </span>
+      )}
+      {!agent.isProjectAgent && agent.isClone && (
+        <span className="rounded border border-neutral-600 bg-neutral-800 px-1.5 py-0.5 text-[10px] font-medium text-neutral-200">
+          Team clone{agent.parentAgentName ? ` · ${agent.parentAgentName}` : ""}
+        </span>
+      )}
+      {!agent.isProjectAgent && !agent.isTemplate && !agent.isClone && (
         <span className="rounded bg-accent-light px-1.5 py-0.5 text-[10px] font-medium text-accent-fg">
           Custom
         </span>

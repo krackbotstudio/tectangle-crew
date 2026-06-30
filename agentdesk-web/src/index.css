@@ -304,3 +304,36 @@ body {
 .work-hub-flow .react-flow__minimap {
   background: #141414;
 }
+
+/* Dashboard — glass / glow aesthetic */
+.dash-page {
+  background: var(--color-canvas);
+}
+
+.dash-ambient {
+  background: radial-gradient(
+    ellipse 70% 45% at 15% -5%,
+    rgba(134, 59, 255, 0.06),
+    transparent 55%
+  );
+}
+
+.dash-orb {
+  background: radial-gradient(circle at 40% 35%, #525252, #262626 55%, #141414 100%);
+  box-shadow:
+    0 0 24px 4px rgba(134, 59, 255, 0.15),
+    inset 0 -6px 16px rgba(0, 0, 0, 0.35);
+  animation: dash-orb-pulse 4s ease-in-out infinite;
+}
+
+@keyframes dash-orb-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}

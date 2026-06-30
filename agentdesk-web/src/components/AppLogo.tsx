@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { LOGO_WORDMARK, PRODUCT_NAME, PRODUCT_TAGLINE } from "../lib/brand";
 import { cn } from "../lib/utils";
 
 interface AppLogoProps {
@@ -19,7 +20,7 @@ const sizeClass = {
 export function AppLogo({
   size = "md",
   showWordmark = false,
-  subtitle,
+  subtitle = PRODUCT_TAGLINE,
   className,
   linkToHome = false,
   homeHref = "/dashboard",
@@ -27,7 +28,7 @@ export function AppLogo({
   const logo = (
     <img
       src="/favicon.svg"
-      alt="Agent Desk"
+      alt={PRODUCT_NAME}
       className={cn("shrink-0 rounded-xl object-contain", sizeClass[size])}
     />
   );
@@ -36,7 +37,7 @@ export function AppLogo({
     <div className={cn("flex items-center gap-3", className)}>
       {linkToHome ? <Link to={homeHref}>{logo}</Link> : logo}
       <div className="min-w-0">
-        <div className="truncate text-sm font-semibold text-text-strong">Agent Desk</div>
+        <div className="truncate text-sm font-semibold text-text-strong">{LOGO_WORDMARK}</div>
         {subtitle && <div className="truncate text-xs text-text-faint">{subtitle}</div>}
       </div>
     </div>

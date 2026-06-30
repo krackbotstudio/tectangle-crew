@@ -12,11 +12,14 @@ import {
 } from "../services/workLinks.js";
 import {
   createProjectGroupForWorkProject,
+  createWorkProjectForProjectGroup,
   deleteProjectGroupForWorkProject,
   ensureWorkProjectGroupsLinked,
   syncAgentToProjectGroup,
   syncProjectGroupFromWorkProject,
 } from "../services/workProjectGroups.js";
+import { canAccessProject } from "../services/access.js";
+import { routeParam } from "../utils/routeParam.js";
 
 const router = Router();
 
@@ -245,6 +248,59 @@ router.get("/hub", authRequired, async (_req, res) => {
   });
 });
 
+router.post("/projects/from-group", authRequired, async (req, res) => {
+  const { projectGroupId } = req.body as { projectGroupId?: string };
+
+  if (!projectGroupId) {
+    res.status(400).json({ error: "projectGroupId is required" });
+    return;
+  }
+
+  if (!(await canAccessProject(req.user!, projectGroupId))) {
+    res.status(403).json({ error: "You do not have access to this project group" });
+    return;
+  }
+
+  try {
+    const { workProjectId, projectGroupId: groupId } = await createWorkProjectForProjectGroup(
+      projectGroupId,
+      req.user!.id
+    );
+
+    const row = (
+      await query("SELECT * FROM work_projects WHERE id = $1", [workProjectId])
+    ).rows[0];
+
+    res.status(201).json({
+      project: {
+        id: row.id,
+        projectGroupId: groupId,
+        title: row.title,
+        description: row.description,
+        status: row.status,
+        startDate: row.start_date,
+        dueDate: row.due_date,
+        activityCount: 0,
+        taskCount: 0,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        activities: [],
+      },
+    });
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === "ALREADY_LINKED") {
+      res.status(409).json({ error: (error as Error).message });
+      return;
+    }
+    if (code === "NOT_FOUND") {
+      res.status(404).json({ error: (error as Error).message });
+      return;
+    }
+    throw error;
+  }
+});
+
 router.post("/projects", authRequired, async (req, res) => {
   const { title, description, status, startDate, dueDate } = req.body as {
     title?: string;
@@ -320,7 +376,7 @@ router.patch("/projects/:id", authRequired, async (req, res) => {
       updated_at = NOW()
      WHERE id = $1
      RETURNING id`,
-    [req.params.id, title?.trim(), description?.trim(), status, startDate, dueDate]
+    [routeParam(req.params.id), title?.trim(), description?.trim(), status, startDate, dueDate]
   );
 
   if (!updated.rows[0]) {
@@ -328,7 +384,7 @@ router.patch("/projects/:id", authRequired, async (req, res) => {
     return;
   }
 
-  await syncProjectGroupFromWorkProject(req.params.id, {
+  await syncProjectGroupFromWorkProject(routeParam(req.params.id), {
     title: title?.trim(),
     description: description?.trim(),
     status,
@@ -340,12 +396,12 @@ router.patch("/projects/:id", authRequired, async (req, res) => {
 router.delete("/projects/:id", authRequired, async (req, res) => {
   const existing = await query<{ project_group_id: string | null }>(
     "SELECT project_group_id FROM work_projects WHERE id = $1",
-    [req.params.id]
+    [routeParam(req.params.id)]
   );
   const projectGroupId = existing.rows[0]?.project_group_id ?? null;
 
   const deleted = await query("DELETE FROM work_projects WHERE id = $1 RETURNING id", [
-    req.params.id,
+    routeParam(req.params.id),
   ]);
   if (!deleted.rows[0]) {
     res.status(404).json({ error: "Project not found" });
@@ -458,7 +514,7 @@ router.patch("/activities/:id", authRequired, async (req, res) => {
       : null;
 
   const sets: string[] = ["updated_at = NOW()"];
-  const params: unknown[] = [req.params.id];
+  const params: unknown[] = [routeParam(req.params.id)];
   let n = 2;
 
   if (title !== undefined) {
@@ -512,21 +568,21 @@ router.patch("/activities/:id", authRequired, async (req, res) => {
   }
 
   if (workProjectId) {
-    await syncActivityProjectLink(req.params.id, workProjectId);
+    await syncActivityProjectLink(routeParam(req.params.id), workProjectId);
   } else if (workProjectId === null) {
     const current = await query<{ work_project_id: string | null }>(
       "SELECT work_project_id FROM activities WHERE id = $1",
-      [req.params.id]
+      [routeParam(req.params.id)]
     );
     if (current.rows[0]?.work_project_id) {
-      await unlinkActivityFromProject(current.rows[0].work_project_id, req.params.id);
+      await unlinkActivityFromProject(current.rows[0].work_project_id, routeParam(req.params.id));
     }
   }
 
   if (workProjectId !== undefined || agentId !== undefined) {
     const full = await query<{ work_project_id: string | null; agent_id: string | null }>(
       "SELECT work_project_id, agent_id FROM activities WHERE id = $1",
-      [req.params.id]
+      [routeParam(req.params.id)]
     );
     const row = full.rows[0];
     if (row) {
@@ -538,7 +594,7 @@ router.patch("/activities/:id", authRequired, async (req, res) => {
 });
 
 router.delete("/activities/:id", authRequired, async (req, res) => {
-  const deleted = await query("DELETE FROM activities WHERE id = $1 RETURNING id", [req.params.id]);
+  const deleted = await query("DELETE FROM activities WHERE id = $1 RETURNING id", [routeParam(req.params.id)]);
   if (!deleted.rows[0]) {
     res.status(404).json({ error: "Activity not found" });
     return;
@@ -675,7 +731,7 @@ router.patch("/tasks/:id", authRequired, async (req, res) => {
       : null;
 
   const sets: string[] = ["updated_at = NOW()"];
-  const params: unknown[] = [req.params.id];
+  const params: unknown[] = [routeParam(req.params.id)];
   let n = 2;
 
   if (title !== undefined) {
@@ -736,7 +792,7 @@ router.patch("/tasks/:id", authRequired, async (req, res) => {
 });
 
 router.delete("/tasks/:id", authRequired, async (req, res) => {
-  const deleted = await query("DELETE FROM work_tasks WHERE id = $1 RETURNING id", [req.params.id]);
+  const deleted = await query("DELETE FROM work_tasks WHERE id = $1 RETURNING id", [routeParam(req.params.id)]);
   if (!deleted.rows[0]) {
     res.status(404).json({ error: "Task not found" });
     return;
@@ -751,13 +807,13 @@ router.post("/activities/:id/link", authRequired, async (req, res) => {
     return;
   }
 
-  const exists = await query("SELECT id FROM activities WHERE id = $1", [req.params.id]);
+  const exists = await query("SELECT id FROM activities WHERE id = $1", [routeParam(req.params.id)]);
   if (!exists.rows[0]) {
     res.status(404).json({ error: "Activity not found" });
     return;
   }
 
-  await linkActivityToProject(workProjectId, req.params.id);
+  await linkActivityToProject(workProjectId, routeParam(req.params.id));
   res.json({ linked: true });
 });
 
@@ -768,7 +824,7 @@ router.post("/activities/:id/unlink", authRequired, async (req, res) => {
     return;
   }
 
-  await unlinkActivityFromProject(workProjectId, req.params.id);
+  await unlinkActivityFromProject(workProjectId, routeParam(req.params.id));
   res.json({ unlinked: true });
 });
 
@@ -779,7 +835,7 @@ router.post("/activities/:id/duplicate", authRequired, async (req, res) => {
   };
 
   try {
-    const newId = await duplicateActivity(req.params.id, {
+    const newId = await duplicateActivity(routeParam(req.params.id), {
       workProjectId: workProjectId ?? null,
       copyTasks: copyTasks ?? true,
       createdBy: req.user!.id,
@@ -799,7 +855,7 @@ router.post("/tasks/:id/duplicate", authRequired, async (req, res) => {
   };
 
   try {
-    const newId = await duplicateTask(req.params.id, {
+    const newId = await duplicateTask(routeParam(req.params.id), {
       activityId: activityId ?? null,
       workProjectId: workProjectId ?? null,
       createdBy: req.user!.id,

@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { config } from "../config.js";
+import { LOGO_WORDMARK } from "../brand.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -77,7 +78,7 @@ export async function buildWorkflowFromTemplate(
 
   const defaultPrompt =
     options?.systemPrompt?.trim() ||
-    `You are the ${options?.agentName ?? agentSlug} agent for Agent Desk.`;
+    `You are the ${options?.agentName ?? agentSlug} agent for ${LOGO_WORDMARK}.`;
 
   json = json.replace(/You are the Content Agent\./g, defaultPrompt.replace(/\\/g, "\\\\").replace(/"/g, '\\"'));
 

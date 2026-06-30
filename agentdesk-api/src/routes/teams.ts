@@ -2,12 +2,9 @@ import { Router } from "express";
 import { query } from "../db.js";
 import { authRequired, adminRequired } from "../middleware/auth.js";
 import { getAccessibleTeamIds, canAccessTeam } from "../services/access.js";
+import { routeParam } from "../utils/routeParam.js";
 
 const router = Router();
-
-function routeParam(value: string | string[]): string {
-  return Array.isArray(value) ? value[0] : value;
-}
 
 interface TeamRow {
   id: string;
@@ -183,7 +180,12 @@ router.get("/:slug", authRequired, async (req, res) => {
             (SELECT COUNT(*)::text FROM project_agents pa WHERE pa.agent_id = a.id) AS project_count
      FROM agents a
      LEFT JOIN agents parent ON parent.id = a.parent_agent_id
-     WHERE a.team_group_id = $1 ORDER BY a.is_template DESC, a.name`,
+     WHERE a.team_group_id = $1
+       AND (
+         a.is_template = true
+         OR NOT EXISTS (SELECT 1 FROM project_agents pa WHERE pa.agent_id = a.id)
+       )
+     ORDER BY a.is_template DESC, a.name`,
     [team.id]
   );
 

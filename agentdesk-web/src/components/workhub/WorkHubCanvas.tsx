@@ -206,6 +206,8 @@ type CanvasProps = {
 
   onCreateCard: (kind: WorkItemKind) => void;
 
+  onAddExistingProject: () => void;
+
   agents: Agent[];
 
   onAgentChange: (selection: WorkNodeSelection, agentId: string | null) => void;
@@ -255,6 +257,8 @@ function CanvasFlow({
   onDisconnectTask,
 
   onCreateCard,
+
+  onAddExistingProject,
 
   agents,
 
@@ -833,13 +837,10 @@ function CanvasFlow({
       {canvasMenu && (
 
         <WorkCanvasContextMenu
-
           position={canvasMenu}
-
           onClose={() => setCanvasMenu(null)}
-
           onCreate={onCreateCard}
-
+          onAddExisting={onAddExistingProject}
         />
 
       )}
