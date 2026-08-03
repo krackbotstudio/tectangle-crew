@@ -337,3 +337,41 @@ body {
     opacity: 1;
   }
 }
+
+@keyframes network-gen-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes network-gen-progress {
+  0% {
+    transform: translateX(-100%);
+    width: 35%;
+  }
+  50% {
+    width: 55%;
+  }
+  100% {
+    transform: translateX(280%);
+    width: 35%;
+  }
+}
+
+.network-gen-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.1) 45%,
+    rgba(255, 255, 255, 0.03) 90%
+  );
+  background-size: 200% 100%;
+  animation: network-gen-shimmer 1.4s ease-in-out infinite;
+}
+
+.network-gen-progress {
+  animation: network-gen-progress 1.6s ease-in-out infinite;
+}

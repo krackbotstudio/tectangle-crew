@@ -19,6 +19,8 @@ import { AgentsRedirectPage } from "./pages/AgentsRedirectPage";
 import { AgentManagePage } from "./pages/AgentManagePage";
 import { TemplateLibraryPage } from "./pages/TemplateLibraryPage";
 import { SocialMediaPage } from "./pages/SocialMediaPage";
+import { NetworksPage } from "./pages/NetworksPage";
+import { BrandPage } from "./pages/BrandPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +50,8 @@ export default function App() {
             <Route path="/agents" element={<AgentsRedirectPage />} />
             <Route path="/templates" element={<TemplateLibraryPage />} />
             <Route path="/social" element={<SocialMediaPage />} />
+            <Route path="/networks" element={<NetworksPage />} />
+            <Route path="/brand" element={<BrandPage />} />
             <Route path="/agents/:agentSlug" element={<AgentManagePage />} />
             <Route path="/agents/:agentSlug/:tab" element={<AgentManagePage />} />
             <Route path="/work" element={<WorkHubPage />} />

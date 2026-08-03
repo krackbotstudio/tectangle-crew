@@ -5,6 +5,14 @@ import { googleSheetsAdapter } from "./googleSheets.js";
 import { googleDocsAdapter } from "./googleDocs.js";
 import { slackAdapter } from "./slack.js";
 import { bufferAdapter } from "./buffer.js";
+import {
+  facebookAdapter,
+  instagramAdapter,
+  linkedinAdapter,
+  metaBusinessAdapter,
+  tiktokAdapter,
+  xTwitterAdapter,
+} from "./socialAdapters.js";
 import { getCatalogTool } from "../toolCatalog.js";
 
 const ADAPTERS: IntegrationAdapter[] = [
@@ -13,6 +21,12 @@ const ADAPTERS: IntegrationAdapter[] = [
   googleDocsAdapter,
   slackAdapter,
   bufferAdapter,
+  metaBusinessAdapter,
+  facebookAdapter,
+  instagramAdapter,
+  linkedinAdapter,
+  xTwitterAdapter,
+  tiktokAdapter,
 ];
 
 const adapterBySlug = new Map(ADAPTERS.map((a) => [a.toolSlug, a]));

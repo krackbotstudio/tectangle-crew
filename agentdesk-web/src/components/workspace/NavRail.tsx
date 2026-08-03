@@ -9,6 +9,8 @@ import {
   Search,
   LayoutGrid,
   Share2,
+  Network,
+  Palette,
   Layers,
   Store,
   Terminal,
@@ -24,6 +26,8 @@ const items = [
   { to: "/projects", icon: FolderKanban, label: "Groups" },
   { to: "/work", icon: ClipboardList, label: "Work" },
   { to: "/social", icon: Share2, label: "Social" },
+  { to: "/networks", icon: Network, label: "Networks" },
+  { to: "/brand", icon: Palette, label: "Brand" },
   { to: "/templates", icon: Layers, label: "Templates" },
   { to: "/app-store", icon: Store, label: "App Store" },
 ];

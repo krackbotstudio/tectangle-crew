@@ -32,6 +32,10 @@ import { parseAskQuestionsFromReply } from "../services/agentQuestions.js";
 import { expandMessageReferences } from "../services/messageRefs.js";
 import { createSocialPost } from "../services/socialPosts.js";
 import { SOCIAL_MEDIA_MANAGER_PROMPT } from "../services/socialMediaPrompts.js";
+import {
+  buildSocialWorkspaceContext,
+  isSocialMediaAgent,
+} from "../services/socialAgentContext.js";
 import { routeParam } from "../utils/routeParam.js";
 
 const router = Router();
@@ -141,6 +145,7 @@ interface AgentRow {
   skills: string[];
   rules: string[];
   constraints: string[];
+  parent_agent_id: string | null;
 }
 
 async function executeAgentResponse(
@@ -218,7 +223,11 @@ async function executeAgentResponse(
     ? `${projectContext.title}. ${projectContext.goal ?? ""}. ${projectContext.description ?? ""}. ${expandedMessage}`
     : expandedMessage;
 
-  const knowledgeContext = await retrieveKnowledgeContext(currentAgent.id, knowledgeQuery);
+  // Prefer this agent's knowledge; also pull from parent template for project instances
+  let knowledgeContext = await retrieveKnowledgeContext(currentAgent.id, knowledgeQuery);
+  if (!knowledgeContext.trim() && currentAgent.parent_agent_id) {
+    knowledgeContext = await retrieveKnowledgeContext(currentAgent.parent_agent_id, knowledgeQuery);
+  }
   const effectiveTools = projectId
     ? await listEffectiveToolsForAgentOnProject(currentAgent.id, projectId)
     : await listEffectiveToolsForAgent(currentAgent.id);
@@ -232,20 +241,39 @@ async function executeAgentResponse(
     workspaceStatus: t.workspaceStatus,
     config: t.config,
   }));
-  
+
+  const socialAgent = isSocialMediaAgent({
+    slug: currentAgent.slug,
+    name: currentAgent.name,
+    parent_agent_id: currentAgent.parent_agent_id,
+    skills: Array.isArray(currentAgent.skills)
+      ? currentAgent.skills.map(String)
+      : [],
+  });
+
   let systemPrompt = buildAgentSystemPrompt(agentForPrompt, knowledgeContext, toolPromptInfo, {
-    skipOutputLocationGate: Boolean(projectContext),
+    skipOutputLocationGate: Boolean(projectContext) || socialAgent,
   });
   if (isDesignAgent(currentAgent)) {
     systemPrompt += `\n\n${DESIGN_AGENT_IMAGE_INSTRUCTIONS}`;
   }
   if (
-    currentAgent.slug === "social-media-manager" ||
+    socialAgent ||
     effectiveTools.some((t) =>
-      ["instagram", "facebook", "linkedin", "x-twitter", "buffer", "meta-business"].includes(t.toolSlug)
+      ["instagram", "facebook", "linkedin", "x-twitter", "tiktok", "buffer", "meta-business"].includes(
+        t.toolSlug
+      )
     )
   ) {
     systemPrompt += `\n\n${SOCIAL_MEDIA_MANAGER_PROMPT}`;
+    const socialContext = await buildSocialWorkspaceContext({
+      userId,
+      projectId,
+      projectTitle: projectContext?.title,
+      projectGoal: projectContext?.goal,
+      projectDescription: projectContext?.description,
+    });
+    systemPrompt += `\n\n${socialContext}`;
   }
   if (projectContext) {
     systemPrompt += `\n\n${buildProjectGroupContextBlock({
@@ -380,8 +408,34 @@ async function executeAgentResponse(
       }
 
       const action = parseAgentAction(result.reply);
+      const socialActions = parseSocialActions(result.reply);
 
-      if (action?.action === "schedule_post" || action?.action === "publish_post") {
+      if (socialActions.length > 0) {
+        const replies: string[] = [result.reply.trim()].filter(Boolean);
+        for (const socialAction of socialActions) {
+          const postResult = await handleSocialPostAction({
+            action: socialAction,
+            userId,
+            projectId,
+            agentId: currentAgent.id,
+          });
+          replies.push(postResult.reply);
+        }
+        const combined = replies.join("\n\n");
+        await query(
+          "INSERT INTO chat_messages (agent_id, user_id, role, content, project_id) VALUES ($1, $2, 'assistant', $3, $4)",
+          [currentAgent.id, userId, combined, projectId ?? null]
+        );
+        if (taskId) {
+          await query(
+            `UPDATE tasks SET status = 'done', current_step = 'Social campaign processed', updated_at = NOW() WHERE id = $1`,
+            [taskId]
+          );
+        }
+        return { reply: combined, source: "direct", taskId };
+      }
+
+      if (action?.action === "schedule_post" || action?.action === "publish_post" || action?.action === "plan_campaign") {
         const postResult = await handleSocialPostAction({
           action,
           userId,
@@ -841,7 +895,8 @@ interface AgentAction {
     | "create_tool"
     | "generate_image"
     | "schedule_post"
-    | "publish_post";
+    | "publish_post"
+    | "plan_campaign";
   toolSlug?: string;
   config?: Record<string, string>;
   prompt?: string;
@@ -853,6 +908,15 @@ interface AgentAction {
   handle?: string;
   scheduledAt?: string;
   creativeId?: string;
+  theme?: string;
+  posts?: Array<{
+    platform: string;
+    content: string;
+    handle?: string;
+    scheduledAt?: string;
+    creativeId?: string;
+    publishNow?: boolean;
+  }>;
 }
 
 async function handleSocialPostAction(input: {
@@ -861,6 +925,34 @@ async function handleSocialPostAction(input: {
   projectId: string | null;
   agentId: string;
 }): Promise<{ reply: string }> {
+  if (input.action.action === "plan_campaign") {
+    const posts = input.action.posts ?? [];
+    if (!posts.length) {
+      return { reply: "plan_campaign needs a posts array with platform, content, and scheduledAt." };
+    }
+    const lines: string[] = [];
+    if (input.action.theme) lines.push(`Campaign: ${input.action.theme}`);
+    let ok = 0;
+    for (const item of posts) {
+      if (!item.platform?.trim() || !item.content?.trim()) continue;
+      const result = await createSocialPost(input.userId, {
+        platform: item.platform.trim(),
+        content: item.content.trim(),
+        projectId: input.projectId ?? undefined,
+        agentId: input.agentId,
+        handle: item.handle,
+        creativeId: item.creativeId,
+        scheduledAt: item.publishNow ? undefined : item.scheduledAt,
+        publishNow: Boolean(item.publishNow),
+      });
+      ok += 1;
+      lines.push(`• ${item.platform}: ${result.message}`);
+    }
+    if (!ok) return { reply: "No valid posts found in the campaign plan." };
+    lines.push(`\nScheduled/created ${ok} post(s). Review them in Social → Calendar / Posts.`);
+    return { reply: lines.join("\n") };
+  }
+
   const platform = input.action.platform?.trim();
   const content = input.action.content?.trim();
   if (!platform || !content) {
@@ -913,10 +1005,23 @@ async function handleGenerateImageAction(input: {
   const rawPrompt = input.action.prompt?.trim();
   if (!rawPrompt) return null;
 
-  const prompt =
+  let prompt =
     input.projectBrief && !rawPrompt.includes(input.projectBrief.slice(0, 40))
       ? `PROJECT:\n${input.projectBrief}\n\nVISUAL:\n${rawPrompt}`
       : rawPrompt;
+
+  let brand: Awaited<ReturnType<typeof import("../services/brandGuidelines.js").getBrandGuidelines>> | null =
+    null;
+  try {
+    const brandMod = await import("../services/brandGuidelines.js");
+    brand = await brandMod.getBrandGuidelines();
+    const brandBlock = brandMod.formatBrandImageConstraints(brand);
+    if (brandBlock && !prompt.includes("MANDATORY BRAND GUIDELINES")) {
+      prompt = `${brandBlock}\n\n${prompt}`;
+    }
+  } catch {
+    /* brand optional */
+  }
 
   try {
     const generated = await generateAgentImage(input.aiConfig, {
@@ -925,6 +1030,21 @@ async function handleGenerateImageAction(input: {
       height: input.action.height,
       purpose: input.action.purpose,
     });
+
+    let fileName = generated.fileName;
+    let mimeType = generated.mimeType;
+    if (brand) {
+      try {
+        const { applyBrandLogoOverlay } = await import("../services/brandLogoOverlay.js");
+        const overlaid = await applyBrandLogoOverlay(fileName, brand);
+        if (overlaid.applied) {
+          fileName = overlaid.fileName;
+          mimeType = "image/png";
+        }
+      } catch {
+        /* keep original */
+      }
+    }
 
     const creativeInsert = await query<{
       id: string;
@@ -960,8 +1080,8 @@ async function handleGenerateImageAction(input: {
         generated.purposeLabel,
         generated.width,
         generated.height,
-        generated.fileName,
-        generated.mimeType,
+        fileName,
+        mimeType,
         generated.provider,
       ]
     );
@@ -1006,33 +1126,47 @@ async function handleGenerateImageAction(input: {
 }
 
 function parseAgentAction(text: string): AgentAction | null {
-  const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
-  const match = text.match(jsonRegex);
-  if (match) {
+  const actions = parseAllAgentActions(text);
+  return actions[0] ?? null;
+}
+
+function parseSocialActions(text: string): AgentAction[] {
+  return parseAllAgentActions(text).filter(
+    (a) =>
+      a.action === "schedule_post" ||
+      a.action === "publish_post" ||
+      a.action === "plan_campaign"
+  );
+}
+
+function parseAllAgentActions(text: string): AgentAction[] {
+  const jsonRegex = /```json\s*([\s\S]*?)\s*```/g;
+  const actions: AgentAction[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = jsonRegex.exec(text)) !== null) {
     try {
       const parsed = JSON.parse(match[1].trim());
-      if (parsed?.action === "ask_questions") {
-        return null;
+      if (!parsed?.action || parsed.action === "ask_questions") continue;
+      if (parsed.action === "generate_image" && parsed.prompt) {
+        actions.push(parsed as AgentAction);
+        continue;
       }
-      if (parsed && parsed.action === "generate_image" && parsed.prompt) {
-        return parsed as AgentAction;
-      }
-      if (parsed && (parsed.action === "schedule_post" || parsed.action === "publish_post")) {
-        return parsed as AgentAction;
-      }
-      if (parsed && (
+      if (
+        parsed.action === "schedule_post" ||
+        parsed.action === "publish_post" ||
+        parsed.action === "plan_campaign" ||
         parsed.action === "connect_tool" ||
         parsed.action === "fetch_tool" ||
         parsed.action === "write_tool" ||
         parsed.action === "create_tool"
-      )) {
-        return parsed as AgentAction;
+      ) {
+        actions.push(parsed as AgentAction);
       }
     } catch {
-      // ignore
+      // ignore invalid blocks
     }
   }
-  return null;
+  return actions;
 }
 
 export default router;

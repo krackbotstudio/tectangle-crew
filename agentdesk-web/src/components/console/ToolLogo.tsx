@@ -9,14 +9,16 @@ export function ToolLogo({
   size = "md",
   className,
 }: {
-  slug: string;
-  name: string;
+  slug?: string | null;
+  name?: string | null;
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const url = getToolLogoUrl(slug);
-  const meta = getToolLogoMeta(slug);
+  const safeSlug = slug?.trim() || "tool";
+  const label = name?.trim() || safeSlug;
+  const url = getToolLogoUrl(safeSlug);
+  const meta = getToolLogoMeta(safeSlug);
 
   const box = {
     sm: "h-8 w-8 rounded-lg",
@@ -40,7 +42,7 @@ export function ToolLogo({
         )}
         aria-hidden
       >
-        {name.charAt(0).toUpperCase()}
+        {label.charAt(0).toUpperCase() || "?"}
       </div>
     );
   }
@@ -60,7 +62,7 @@ export function ToolLogo({
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}
-        title={meta?.icon ? `${name} logo` : undefined}
+        title={meta?.icon ? `${label} logo` : undefined}
       />
     </div>
   );

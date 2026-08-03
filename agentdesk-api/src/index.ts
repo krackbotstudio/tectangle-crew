@@ -18,6 +18,9 @@ import toolsRoutes from "./routes/tools.js";
 import consoleRoutes from "./routes/console.js";
 import creativesRoutes from "./routes/creatives.js";
 import socialRoutes from "./routes/social.js";
+import socialOauthRoutes from "./routes/socialOauth.js";
+import networksRoutes from "./routes/networks.js";
+import brandRoutes from "./routes/brand.js";
 import { startSocialScheduler } from "./services/socialScheduler.js";
 import { dbMode, getPoolForHealth, initDatabase } from "./db.js";
 import { repairTemplateProjectLinks } from "./services/projectAgentInstances.js";
@@ -67,6 +70,9 @@ app.use("/api/tools", toolsRoutes);
 app.use("/api/console", consoleRoutes);
 app.use("/api/creatives", creativesRoutes);
 app.use("/api/social", socialRoutes);
+app.use("/api/social/oauth", socialOauthRoutes);
+app.use("/api/networks", networksRoutes);
+app.use("/api/brand", brandRoutes);
 
 app.use(
   (

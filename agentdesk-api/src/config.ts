@@ -28,4 +28,15 @@ export const config = {
   googleRedirectUri:
     process.env.GOOGLE_REDIRECT_URI || "http://localhost:3001/api/auth/google/callback",
   allowSignup: process.env.ALLOW_SIGNUP !== "false",
+
+  /** Social platform OAuth (native connect) */
+  apiPublicUrl: process.env.API_PUBLIC_URL || `http://localhost:${process.env.API_PORT || "3001"}`,
+  metaAppId: process.env.META_APP_ID || "",
+  metaAppSecret: process.env.META_APP_SECRET || "",
+  linkedinClientId: process.env.LINKEDIN_CLIENT_ID || "",
+  linkedinClientSecret: process.env.LINKEDIN_CLIENT_SECRET || "",
+  xClientId: process.env.X_CLIENT_ID || "",
+  xClientSecret: process.env.X_CLIENT_SECRET || "",
+  tiktokClientKey: process.env.TIKTOK_CLIENT_KEY || "",
+  tiktokClientSecret: process.env.TIKTOK_CLIENT_SECRET || "",
 };

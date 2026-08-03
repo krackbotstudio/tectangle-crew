@@ -100,6 +100,8 @@ export const TOOL_CATALOG: CatalogTool[] = [
     description: "Connect Facebook, Instagram, and WhatsApp business accounts.",
     capabilities: ["facebook_pages", "instagram", "whatsapp_business", "insights"],
     connectVia: "oauth",
+    liveIntegration: true,
+    setupHint: "Connect via Social → Connect (Meta OAuth). Requires META_APP_ID and META_APP_SECRET.",
   },
   {
     slug: "instagram",
@@ -108,6 +110,8 @@ export const TOOL_CATALOG: CatalogTool[] = [
     description: "Publish feed posts, reels, and stories.",
     capabilities: ["publish_post", "publish_reel", "publish_story", "insights"],
     connectVia: "oauth",
+    liveIntegration: true,
+    setupHint: "Connect via Social → Connect (Meta). Instagram Business account must be linked to a Page.",
   },
   {
     slug: "facebook",
@@ -116,6 +120,8 @@ export const TOOL_CATALOG: CatalogTool[] = [
     description: "Publish page posts and manage community content.",
     capabilities: ["publish_post", "page_inbox", "insights"],
     connectVia: "oauth",
+    liveIntegration: true,
+    setupHint: "Connect via Social → Connect (Meta OAuth).",
   },
   {
     slug: "whatsapp-business",
@@ -132,6 +138,8 @@ export const TOOL_CATALOG: CatalogTool[] = [
     description: "Schedule posts and threads on X.",
     capabilities: ["publish_post", "publish_thread", "analytics"],
     connectVia: "oauth",
+    liveIntegration: true,
+    setupHint: "Connect via Social → Connect. Set X_CLIENT_ID and X_CLIENT_SECRET.",
   },
   {
     slug: "linkedin",
@@ -140,6 +148,8 @@ export const TOOL_CATALOG: CatalogTool[] = [
     description: "Publish company page and personal brand posts.",
     capabilities: ["publish_post", "company_page", "analytics"],
     connectVia: "oauth",
+    liveIntegration: true,
+    setupHint: "Connect via Social → Connect. Set LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET.",
   },
   {
     slug: "tiktok",
@@ -148,6 +158,8 @@ export const TOOL_CATALOG: CatalogTool[] = [
     description: "Upload and schedule short-form video.",
     capabilities: ["publish_video", "analytics"],
     connectVia: "oauth",
+    liveIntegration: true,
+    setupHint: "Connect via Social → Connect. Video publish requires an uploaded creative.",
   },
   {
     slug: "buffer",

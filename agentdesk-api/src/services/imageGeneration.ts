@@ -531,5 +531,6 @@ export const SOCIAL_PLATFORMS = [
   { id: "facebook", label: "Facebook", requiresTools: ["facebook", "meta-business"] },
   { id: "linkedin", label: "LinkedIn", requiresTools: ["linkedin"] },
   { id: "x-twitter", label: "X (Twitter)", requiresTools: ["x-twitter"] },
+  { id: "tiktok", label: "TikTok", requiresTools: ["tiktok"] },
   { id: "buffer", label: "Buffer (schedule)", requiresTools: ["buffer"] },
 ] as const;

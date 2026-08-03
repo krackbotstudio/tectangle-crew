@@ -10,6 +10,9 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:3001",
         changeOrigin: true,
+        // Image generation can take well over the default proxy idle timeout.
+        timeout: 600_000,
+        proxyTimeout: 600_000,
       },
     },
   },

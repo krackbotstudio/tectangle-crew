@@ -455,6 +455,139 @@ export interface SocialPost {
   updatedAt: string;
 }
 
+export interface NetworkCommunity {
+  id: string;
+  slug: string;
+  name: string;
+  platform: string;
+  url: string;
+  description: string | null;
+  industries: string[];
+  interests: string[];
+  productTypes: string[];
+  audienceSize: string | null;
+  activityLevel: string | null;
+  joinType: string;
+  ownedSocialPlatform: string | null;
+  rulesNotes: string | null;
+  isActive: boolean;
+  fitScore?: number;
+  fitReasons?: string[];
+}
+
+export interface NetworkGtmProfile {
+  id: string;
+  projectId: string | null;
+  productName: string | null;
+  productType: string | null;
+  industry: string | null;
+  icp: string | null;
+  offer: string | null;
+  stage: string;
+  goals: string[];
+  interests: string[];
+  brandVoice: string | null;
+  geography: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NetworkCampaign {
+  id: string;
+  projectId: string | null;
+  gtmProfileId: string | null;
+  title: string;
+  goal: string | null;
+  status: string;
+  brief: string | null;
+  collateral: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NetworkCampaignJob {
+  id: string;
+  campaignId: string;
+  communityId: string | null;
+  communityName: string | null;
+  channelType: string;
+  platform: string;
+  destinationLabel: string | null;
+  destinationUrl: string | null;
+  content: string;
+  collateralType: string;
+  status: string;
+  socialPostId: string | null;
+  creativeId: string | null;
+  creativeDownloadUrl: string | null;
+  externalRef: string | null;
+  errorDetail: string | null;
+  outcome: string | null;
+  publishedAt: string | null;
+  completedAt: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NetworkMembership {
+  id: string;
+  communityId: string;
+  status: string;
+  fitScore: number | null;
+  fitReason: string | null;
+  name: string;
+  platform: string;
+  url: string;
+}
+
+export interface NetworkCollateralPack {
+  launchPost: string;
+  shortDm: string;
+  commentReply: string;
+  waitlistCta: string;
+  linkedinPost: string;
+  xPost: string;
+  summary: string;
+}
+
+export interface NetworkCreativeItem {
+  creativeId: string;
+  communityId: string | null;
+  platform: string;
+  label: string;
+  purpose: string;
+  downloadUrl: string;
+  width: number | null;
+  height: number | null;
+  prompt: string;
+}
+
+export interface BrandGuidelines {
+  id: string;
+  companyName: string | null;
+  tagline: string | null;
+  logoFileName: string | null;
+  logoUrl: string | null;
+  logoAltText: string | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  accentColor: string | null;
+  fontPrimary: string | null;
+  fontSecondary: string | null;
+  imageStyle: string;
+  visualKeywords: string[];
+  logoPlacement: string;
+  doNotes: string | null;
+  dontNotes: string | null;
+  extraRules: string | null;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AgentCreative {
   id: string;
   projectId: string | null;
@@ -1073,7 +1206,17 @@ export const api = {
   getSocialPlatforms: () =>
     apiFetch<{
       platforms: { id: string; label: string; integrationSlugs: string[]; workspaceConnected: boolean }[];
+      oauthProviders: {
+        id: string;
+        label: string;
+        platforms: string[];
+        configured: boolean;
+        description: string;
+      }[];
     }>("/social/platforms"),
+
+  startSocialOauth: (platform: string) =>
+    apiFetch<{ url: string }>(`/social/oauth/${platform}/start`),
 
   getSocialAccounts: () => apiFetch<{ accounts: SocialAccount[] }>("/social/accounts"),
 
@@ -1105,15 +1248,21 @@ export const api = {
     ),
 
   createSocialPost: (data: {
-    platform: string;
+    platform?: string;
+    platforms?: string[];
     content: string;
     projectId?: string;
     scheduledAt?: string;
     publishNow?: boolean;
     handle?: string;
     socialAccountId?: string;
+    creativeId?: string;
   }) =>
-    apiFetch<{ post: SocialPost; message: string }>("/social/posts", {
+    apiFetch<{
+      post: SocialPost;
+      message: string;
+      results?: { post: SocialPost; message: string }[];
+    }>("/social/posts", {
       method: "POST",
       body: JSON.stringify(data),
     }),
@@ -1122,6 +1271,200 @@ export const api = {
     apiFetch<{ post: SocialPost; message: string }>(`/social/posts/${postId}/publish`, {
       method: "POST",
     }),
+
+  scheduleSocialPost: (postId: string, scheduledAt: string) =>
+    apiFetch<{ post: SocialPost; message: string }>(`/social/posts/${postId}/schedule`, {
+      method: "POST",
+      body: JSON.stringify({ scheduledAt }),
+    }),
+
+  planSocialContent: (data: {
+    brief: string;
+    platforms?: string[];
+    days?: number;
+    postsPerWeek?: number;
+    brandVoice?: string;
+  }) =>
+    apiFetch<{
+      plan: {
+        theme: string;
+        summary: string;
+        posts: {
+          platform: string;
+          content: string;
+          scheduledAt: string;
+          contentType: string;
+          rationale: string;
+        }[];
+      };
+    }>("/social/ai/plan", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  scheduleSocialPlan: (data: {
+    posts: { platform: string; content: string; scheduledAt?: string }[];
+    projectId?: string;
+    publishNow?: boolean;
+  }) =>
+    apiFetch<{ message: string; results: { post: SocialPost; message: string }[] }>(
+      "/social/ai/plan/schedule",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    ),
+
+  getNetworkCommunities: (params?: { platform?: string; q?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.platform) qs.set("platform", params.platform);
+    if (params?.q) qs.set("q", params.q);
+    const suffix = qs.toString() ? `?${qs}` : "";
+    return apiFetch<{ communities: NetworkCommunity[] }>(`/networks/communities${suffix}`);
+  },
+
+  getNetworkProfile: (projectId?: string) =>
+    apiFetch<{ profile: NetworkGtmProfile | null }>(
+      `/networks/profile${projectId ? `?projectId=${projectId}` : ""}`
+    ),
+
+  saveNetworkProfile: (data: {
+    projectId?: string;
+    productName?: string;
+    productType?: string;
+    industry?: string;
+    icp?: string;
+    offer?: string;
+    stage?: string;
+    goals?: string[];
+    interests?: string[];
+    brandVoice?: string;
+    geography?: string;
+    notes?: string;
+  }) =>
+    apiFetch<{ profile: NetworkGtmProfile }>("/networks/profile", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  recommendNetworkCommunities: (data?: {
+    projectId?: string;
+    limit?: number;
+    productName?: string;
+    industry?: string;
+    icp?: string;
+    offer?: string;
+    productType?: string;
+    stage?: string;
+    goals?: string[];
+    interests?: string[];
+  }) =>
+    apiFetch<{ profile: NetworkGtmProfile; recommendations: NetworkCommunity[] }>(
+      "/networks/recommend",
+      { method: "POST", body: JSON.stringify(data ?? {}) }
+    ),
+
+  getNetworkMemberships: () =>
+    apiFetch<{ memberships: NetworkMembership[] }>("/networks/memberships"),
+
+  updateNetworkMembership: (data: {
+    communityId: string;
+    status: string;
+    fitScore?: number;
+    fitReason?: string;
+  }) =>
+    apiFetch<{ membership: unknown }>("/networks/memberships", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  generateNetworkCollateral: (projectId?: string) =>
+    apiFetch<{ collateral: NetworkCollateralPack; brief: string }>("/networks/collateral", {
+      method: "POST",
+      body: JSON.stringify({ projectId }),
+    }),
+
+  generateNetworkCreatives: (data: {
+    mode: "shared" | "individual";
+    communityIds: string[];
+    projectId?: string;
+    collateral?: NetworkCollateralPack;
+  }) =>
+    apiFetch<{ mode: "shared" | "individual"; creatives: NetworkCreativeItem[] }>(
+      "/networks/creatives",
+      { method: "POST", body: JSON.stringify(data) }
+    ),
+
+  getNetworkCampaigns: () =>
+    apiFetch<{ campaigns: NetworkCampaign[] }>("/networks/campaigns"),
+
+  getNetworkCampaign: (id: string) =>
+    apiFetch<{ campaign: NetworkCampaign; jobs: NetworkCampaignJob[] }>(
+      `/networks/campaigns/${id}`
+    ),
+
+  createNetworkCampaign: (data: {
+    title: string;
+    goal?: string;
+    projectId?: string;
+    communityIds: string[];
+    publishOwnedNow?: boolean;
+    collateral?: NetworkCollateralPack;
+    creativeMode?: "none" | "shared" | "individual";
+    sharedCreativeId?: string | null;
+    creatives?: { communityId?: string | null; creativeId: string }[];
+  }) =>
+    apiFetch<{ campaign: NetworkCampaign; jobs: NetworkCampaignJob[] }>("/networks/campaigns", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateNetworkJobStatus: (
+    id: string,
+    data: { status?: string; outcome?: string; notes?: string }
+  ) =>
+    apiFetch<{ job: NetworkCampaignJob }>(`/networks/jobs/${id}/status`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  publishNetworkJob: (id: string) =>
+    apiFetch<{ job: NetworkCampaignJob; message: string }>(`/networks/jobs/${id}/publish`, {
+      method: "POST",
+    }),
+
+  getBrandGuidelines: () => apiFetch<{ brand: BrandGuidelines }>("/brand"),
+
+  saveBrandGuidelines: (data: {
+    companyName?: string | null;
+    tagline?: string | null;
+    logoAltText?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    accentColor?: string | null;
+    fontPrimary?: string | null;
+    fontSecondary?: string | null;
+    imageStyle?: string;
+    visualKeywords?: string[];
+    logoPlacement?: string;
+    doNotes?: string | null;
+    dontNotes?: string | null;
+    extraRules?: string | null;
+    clearLogo?: boolean;
+  }) =>
+    apiFetch<{ brand: BrandGuidelines }>("/brand", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+
+  uploadBrandLogo: (file: File) => {
+    const form = new FormData();
+    form.append("logo", file);
+    return apiFetch<{ brand: BrandGuidelines }>("/brand/logo", {
+      method: "POST",
+      body: form,
+    });
+  },
 
   getDocuments: (slug: string) =>
     apiFetch<{ documents: KnowledgeDocument[] }>(`/knowledge/agent/${slug}`),
