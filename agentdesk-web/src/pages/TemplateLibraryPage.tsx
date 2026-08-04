@@ -155,6 +155,16 @@ function CreateTemplateModal({ onClose }: { onClose: () => void }) {
             />
           </label>
 
+          <label className="block space-y-1">
+            <span className="text-xs font-medium text-text-muted">Constraints (one per line)</span>
+            <textarea
+              value={constraintsText}
+              onChange={(e) => setConstraintsText(e.target.value)}
+              rows={2}
+              className="w-full rounded-xl border border-border bg-panel-elevated px-3 py-2 text-sm text-text outline-none focus:border-neutral-500"
+            />
+          </label>
+
           <div className="space-y-2">
             <span className="text-xs font-medium text-text-muted">Visibility</span>
             <div className="flex gap-2">

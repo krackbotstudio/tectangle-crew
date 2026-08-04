@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import fsSync from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
@@ -8,7 +9,19 @@ import { config } from "./config.js";
 import { LOGO_WORDMARK } from "./brand.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const MIGRATIONS_DIR = path.resolve(__dirname, "../../database/migrations");
+
+function getMigrationsDir(): string {
+  const candidates = [
+    path.resolve(process.cwd(), "database/migrations"),
+    path.resolve(process.cwd(), "../database/migrations"),
+    path.resolve(__dirname, "../../database/migrations"),
+    path.resolve(__dirname, "../database/migrations"),
+  ];
+  for (const c of candidates) {
+    if (fsSync.existsSync(c)) return c;
+  }
+  return candidates[0];
+}
 
 let pgPool: pg.Pool | null = null;
 let pglite: PGlite | null = null;
@@ -77,6 +90,7 @@ async function execSql(sql: string): Promise<void> {
 }
 
 async function runPendingMigrations(): Promise<void> {
+  const migrationsDir = getMigrationsDir();
   await execSql(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       name TEXT PRIMARY KEY,
@@ -84,7 +98,7 @@ async function runPendingMigrations(): Promise<void> {
     );
   `);
 
-  const files = (await fs.readdir(MIGRATIONS_DIR))
+  const files = (await fs.readdir(migrationsDir))
     .filter((f) => f.endsWith(".sql") && f !== "001_initial.sql" && f !== "001_embedded.sql" && f !== "002_seed.sql")
     .sort();
 
@@ -95,7 +109,7 @@ async function runPendingMigrations(): Promise<void> {
     );
     if (applied.rows.length > 0) continue;
 
-    const sql = await fs.readFile(path.join(MIGRATIONS_DIR, file), "utf-8");
+    const sql = await fs.readFile(path.join(migrationsDir, file), "utf-8");
     await execSql(sql);
     if (!sql.includes(`INSERT INTO schema_migrations (name) VALUES ('${file}')`)) {
       await query("INSERT INTO schema_migrations (name) VALUES ($1) ON CONFLICT DO NOTHING", [file]);
@@ -159,11 +173,12 @@ async function initEmbedded(): Promise<void> {
   );
 
   if (!check.rows[0]?.exists) {
+    const migrationsDir = getMigrationsDir();
     const migrationSql = await fs.readFile(
-      path.join(MIGRATIONS_DIR, "001_embedded.sql"),
+      path.join(migrationsDir, "001_embedded.sql"),
       "utf-8"
     );
-    const seedSql = await fs.readFile(path.join(MIGRATIONS_DIR, "002_seed.sql"), "utf-8");
+    const seedSql = await fs.readFile(path.join(migrationsDir, "002_seed.sql"), "utf-8");
     await pglite.exec(migrationSql);
     await pglite.exec(seedSql);
     const { seedAdminUser } = await import("./seedData.js");
